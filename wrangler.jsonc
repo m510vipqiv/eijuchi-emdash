@@ -28,6 +28,6 @@
 	// requires Workers Paid plan. Running plugin-free on the free plan.
 	// General maintenance plus the bounded Media Usage lane (see src/worker.ts)
 	"triggers": {
-		"crons": ["* * * * *", "*/2 * * * *"],
+		"crons": ["0 */6 * * *"],
 	},
 }
