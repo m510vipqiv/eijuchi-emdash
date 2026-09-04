@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { getEmDashCollection, getTermsForEntries, getTaxonomyTerms } from "emdash";
 
 import { siteOrigin } from "../utils/site-identity";
-import { CATEGORIES, primaryCategory, postHref } from "../utils/categories";
+import { CATEGORIES, primaryCategory, postHref, effectiveModified } from "../utils/categories";
 
 /**
  * /sitemap.xml — posts (category URLs), static pages, category archives, tags.
@@ -36,7 +36,7 @@ export const GET: APIRoute = async ({ url }) => {
 		);
 		for (const post of result.entries) {
 			const cat = primaryCategory(catsByEntry.get(post.data.id));
-			const mod = post.data.updatedAt ?? post.data.publishedAt;
+			const mod = effectiveModified(post.data.publishedAt, post.data.updatedAt);
 			if (mod && mod.getTime() > latest) latest = mod.getTime();
 			entries.push({
 				loc: `${origin}${postHref(cat, post.id)}`,
