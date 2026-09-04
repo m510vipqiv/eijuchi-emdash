@@ -58,14 +58,18 @@ const { siteTitle, siteTagline } = resolveBlogSiteIdentity(await getSiteSettings
 const fullTitle = title.includes(siteTitle) ? title : `${title} | ${siteTitle}`;
 
 // Primary menu from admin; falls back to the category list when unset.
+// Primary nav = the four categories + 記事一覧. Items from the admin "primary"
+// menu are appended after them (the template seed's Home/About/Posts are ignored).
 const menu = await getMenu("primary");
-const navItems =
-	menu?.items && menu.items.length > 0
-		? menu.items.map((i) => ({ label: i.label, url: i.url, target: i.target }))
-		: [
-				...CATEGORIES.map((c) => ({ label: c.label, url: `/${c.slug}`, target: undefined })),
-				{ label: "記事一覧", url: "/articles", target: undefined },
-			];
+const SEED_MENU_URLS = new Set(["/", "/posts", "/pages/about", "/about"]);
+const extraItems = (menu?.items ?? [])
+	.filter((i) => !SEED_MENU_URLS.has(i.url) && !CATEGORIES.some((c) => i.url === `/${c.slug}`))
+	.map((i) => ({ label: i.label, url: i.url, target: i.target }));
+const navItems = [
+	...CATEGORIES.map((c) => ({ label: c.label, url: `/${c.slug}`, target: undefined as string | undefined })),
+	{ label: "記事一覧", url: "/articles", target: undefined as string | undefined },
+	...extraItems,
+];
 
 const socialMenu = await getMenu("social");
 
@@ -395,43 +399,6 @@ const currentPath = Astro.url.pathname;
 					color: var(--color-on-brand);
 				}
 
-				/* Logo variant switching (OS preference + explicit toggle) */
-				.site-logo-img--dark {
-					display: none;
-				}
-				@media (prefers-color-scheme: dark) {
-					:root:not(.light) .site-logo-img--light {
-						display: none;
-					}
-					:root:not(.light) .site-logo-img--dark {
-						display: block;
-					}
-				}
-				:root.dark .site-logo-img--light {
-					display: none;
-				}
-				:root.dark .site-logo-img--dark {
-					display: block;
-				}
-
-				/* Theme toggle icon switching */
-				.theme-toggle .icon-moon {
-					display: none;
-				}
-				@media (prefers-color-scheme: dark) {
-					:root:not(.light) .theme-toggle .icon-sun {
-						display: none;
-					}
-					:root:not(.light) .theme-toggle .icon-moon {
-						display: block;
-					}
-				}
-				:root.dark .theme-toggle .icon-sun {
-					display: none;
-				}
-				:root.dark .theme-toggle .icon-moon {
-					display: block;
-				}
 			}
 		</style>
 
@@ -491,6 +458,50 @@ const currentPath = Astro.url.pathname;
 
 			.site-title:hover .site-logo-img {
 				filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-brand) 55%, transparent));
+			}
+
+			/* Logo variant switching (OS preference + explicit toggle). Unlayered so it
+			   beats the scoped display rules above. */
+			.site-logo-img--dark,
+			:global(.footer-logo-img.site-logo-img--dark) {
+				display: none;
+			}
+			:global(:root.dark) .site-logo-img--light,
+			:global(:root.dark .footer-logo-img.site-logo-img--light) {
+				display: none;
+			}
+			:global(:root.dark) .site-logo-img--dark,
+			:global(:root.dark .footer-logo-img.site-logo-img--dark) {
+				display: block;
+			}
+			@media (prefers-color-scheme: dark) {
+				:global(:root:not(.light)) .site-logo-img--light,
+				:global(:root:not(.light) .footer-logo-img.site-logo-img--light) {
+					display: none;
+				}
+				:global(:root:not(.light)) .site-logo-img--dark,
+				:global(:root:not(.light) .footer-logo-img.site-logo-img--dark) {
+					display: block;
+				}
+			}
+
+			/* Theme toggle icon switching */
+			.theme-toggle .icon-moon {
+				display: none;
+			}
+			:global(:root.dark) .theme-toggle .icon-sun {
+				display: none;
+			}
+			:global(:root.dark) .theme-toggle .icon-moon {
+				display: block;
+			}
+			@media (prefers-color-scheme: dark) {
+				:global(:root:not(.light)) .theme-toggle .icon-sun {
+					display: none;
+				}
+				:global(:root:not(.light)) .theme-toggle .icon-moon {
+					display: block;
+				}
 			}
 
 			.nav-links {
