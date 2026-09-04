@@ -66,3 +66,19 @@ export function formatDateJa(date: Date | null | undefined): string | null {
 export function isoDate(date: Date | null | undefined): string | undefined {
 	return date ? date.toISOString() : undefined;
 }
+
+/**
+ * Bulk data fixes during the migration (featured images, URL rewrites) bumped
+ * updated_at on every post. Treat updates before this cutoff as "not modified"
+ * so dateModified / 更新日 only reflect real edits made after go-live.
+ */
+export const MIGRATION_CUTOFF = new Date("2026-09-07T00:00:00Z");
+
+export function effectiveModified(
+	publishedAt: Date | null | undefined,
+	updatedAt: Date | null | undefined,
+): Date | null | undefined {
+	if (!updatedAt) return publishedAt;
+	if (updatedAt.getTime() <= MIGRATION_CUTOFF.getTime()) return publishedAt ?? updatedAt;
+	return updatedAt;
+}
