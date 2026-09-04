@@ -23,6 +23,7 @@ import {
 	postHref,
 	formatDateJa,
 	isoDate,
+	effectiveModified,
 } from "../../utils/categories";
 
 const category = decodeSlug(Astro.params.category);
@@ -77,11 +78,12 @@ const tags: Array<{ slug: string; label: string }> =
 	(post.data as any).terms?.tag ?? (await getEntryTerms("posts", post.data.id, "tag"));
 
 const publishDate = formatDateJa(post.data.publishedAt);
-const modifiedDate = formatDateJa(post.data.updatedAt);
+const modifiedAt = effectiveModified(post.data.publishedAt, post.data.updatedAt);
+const modifiedDate = formatDateJa(modifiedAt);
 const showModified =
-	post.data.publishedAt &&
-	post.data.updatedAt &&
-	post.data.updatedAt.getTime() - post.data.publishedAt.getTime() > 24 * 3600 * 1000;
+	!!post.data.publishedAt &&
+	!!modifiedAt &&
+	modifiedAt.getTime() - post.data.publishedAt.getTime() > 24 * 3600 * 1000;
 
 // Related: newest posts from the same category (excluding this one)
 const { entries: related } = await getEmDashCollection("posts", {
@@ -108,7 +110,7 @@ const articleJsonLd = {
 	description,
 	image: featuredImageUrl ? [featuredImageUrl] : undefined,
 	datePublished: isoDate(post.data.publishedAt),
-	dateModified: isoDate(post.data.updatedAt) ?? isoDate(post.data.publishedAt),
+	dateModified: isoDate(modifiedAt) ?? isoDate(post.data.publishedAt),
 	inLanguage: "ja",
 	articleSection: catLabel,
 	keywords: tags.map((t) => t.label).join(", ") || undefined,
@@ -141,7 +143,7 @@ const breadcrumbJsonLd = {
 	robots={seo.robots}
 	type="article"
 	publishedTime={isoDate(post.data.publishedAt) ?? null}
-	modifiedTime={isoDate(post.data.updatedAt) ?? null}
+	modifiedTime={isoDate(modifiedAt) ?? null}
 	author={authorName}
 	content={{ collection: "posts", id: post.data.id, slug }}
 >
@@ -162,7 +164,7 @@ const breadcrumbJsonLd = {
 					{
 						showModified && (
 							<span class="article-updated">
-								更新: <time datetime={isoDate(post.data.updatedAt)}>{modifiedDate}</time>
+								更新: <time datetime={isoDate(modifiedAt)}>{modifiedDate}</time>
 							</span>
 						)
 					}
