@@ -14,6 +14,8 @@ import {
 	getSiteSettings,
 } from "emdash";
 import { PortableText } from "emdash/ui";
+import { Form as ContactForm } from "@emdash-cms/plugin-forms/ui";
+import "@emdash-cms/plugin-forms/styles";
 import Base from "../../layouts/Base.astro";
 import PostCard from "../../components/PostCard.astro";
 import { getReadingTime } from "../../utils/reading-time";
@@ -111,6 +113,13 @@ const breadcrumbJsonLd = {
 				<div class="page-content">
 					<PortableText value={page.data.content} />
 				</div>
+				{
+					slug === "contact" && (
+						<section class="contact-form" aria-label="お問い合わせフォーム">
+							<ContactForm id="contact" />
+						</section>
+					)
+				}
 			</article>
 		</Base>
 	) : (
@@ -320,6 +329,67 @@ const breadcrumbJsonLd = {
 	.page-content :global(a) {
 		text-decoration: underline;
 		text-underline-offset: 3px;
+	}
+
+	/* Contact form (EmDash Forms plugin) */
+	.contact-form {
+		margin-top: var(--spacing-10);
+		padding: var(--spacing-8);
+		border-radius: var(--radius-lg);
+		border: 1px solid var(--color-border);
+		background: var(--color-bg-subtle);
+	}
+
+	.contact-form :global(.ec-form) {
+		--ec-form-gap: var(--spacing-5);
+		--ec-form-field-border: 1px solid var(--color-border);
+		--ec-form-field-radius: var(--radius);
+		--ec-form-field-padding: 0.7rem 0.9rem;
+		--ec-form-field-bg: var(--color-bg);
+		--ec-form-error-color: #e0245e;
+		--ec-form-required-color: var(--color-brand);
+		--ec-form-help-color: var(--color-muted);
+		--ec-form-submit-bg: var(--color-brand);
+		--ec-form-submit-color: var(--color-on-brand);
+		--ec-form-submit-radius: 999px;
+		--ec-form-submit-padding: 0.8rem 2rem;
+	}
+
+	.contact-form :global(.ec-form-label) {
+		font-weight: 700;
+		font-size: var(--font-size-sm);
+	}
+
+	.contact-form :global(.ec-form-input) {
+		font-family: var(--font-body);
+		font-size: var(--font-size-base);
+		color: var(--color-text);
+		width: 100%;
+	}
+
+	.contact-form :global(.ec-form-input:focus) {
+		outline: none;
+		border-color: var(--color-brand);
+		box-shadow: 0 0 0 3px var(--color-brand-ring);
+	}
+
+	.contact-form :global(textarea.ec-form-input) {
+		min-height: 180px;
+	}
+
+	.contact-form :global(.ec-form-submit) {
+		font-family: var(--font-body);
+		font-weight: 700;
+		cursor: pointer;
+		transition: background var(--transition-fast);
+	}
+
+	.contact-form :global(.ec-form-submit:hover) {
+		background: var(--color-brand-hover);
+	}
+
+	.contact-form :global(.ec-form-status) {
+		font-size: var(--font-size-sm);
 	}
 
 	@media (max-width: 900px) {
