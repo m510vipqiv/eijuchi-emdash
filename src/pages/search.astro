@@ -6,40 +6,36 @@ import Base from "../layouts/Base.astro";
 
 const query = Astro.url.searchParams.get("q")?.trim() || "";
 
-// Use the FTS-backed search() API instead of loading every post and
-// filtering in JS. FTS scales as the post count grows, returns ranked
-// results, and handles tokenization/stemming. Templates that grep all
-// post bodies in JS quickly become unusable past a few hundred posts.
+// FTS-backed search(); results link via /posts/{slug} which 301s to the
+// canonical /{category}/{slug} URL.
 const { items: results } = query
 	? await search(query, { collections: ["posts"], limit: 30 })
 	: { items: [] };
 ---
 
-<Base
-	title={query ? `Search: ${query}` : "Search"}
-	description="Search blog posts"
->
+<Base title={query ? `「${query}」の検索結果` : "検索"} description="サイト内検索" robots="noindex, follow">
 	<section class="search-page">
-		<h1 class="search-title">Search</h1>
+		<h1 class="search-title"><span class="glitch-bar" aria-hidden="true"></span>サイト内検索</h1>
 
-		<form method="get" action="/search" class="search-form">
+		<form method="get" action="/search" class="search-form" role="search">
 			<input
 				type="search"
 				name="q"
 				value={query}
-				placeholder="Search posts..."
+				placeholder="キーワードを入力"
 				class="search-input"
+				aria-label="検索キーワード"
 				autofocus
 			/>
-			<button type="submit" class="search-button">Search</button>
+			<button type="submit" class="search-button">検索</button>
 		</form>
 
 		{
 			query && (
 				<p class="search-summary">
 					{results.length === 0
-						? `No results for "${query}"`
-						: `${results.length} result${results.length === 1 ? "" : "s"} for "${query}"`}
+						? `「${query}」に一致する記事は見つかりませんでした。`
+						: `「${query}」の検索結果: ${results.length}件`}
 				</p>
 			)
 		}
@@ -49,16 +45,9 @@ const { items: results } = query
 				<ol class="search-results">
 					{results.map((result) => (
 						<li class="search-result">
-							<a
-								href={`/posts/${result.slug ?? result.id}`}
-								class="result-link"
-							>
-								<h2 class="result-title">
-									{result.title ?? "Untitled"}
-								</h2>
-								{result.snippet && (
-									<p class="result-snippet" set:html={result.snippet} />
-								)}
+							<a href={`/posts/${result.slug ?? result.id}`} class="result-link">
+								<h2 class="result-title">{result.title ?? "無題"}</h2>
+								{result.snippet && <p class="result-snippet" set:html={result.snippet} />}
 							</a>
 						</li>
 					))}
@@ -66,18 +55,21 @@ const { items: results } = query
 			)
 		}
 
-		{!query && <p class="search-hint">Enter a search term to find posts.</p>}
+		{!query && <p class="search-hint">記事タイトルや本文からキーワードで検索できます。</p>}
 	</section>
 </Base>
 
 <style>
 	.search-page {
-		max-width: var(--max-width);
+		max-width: var(--content-width);
 		margin: 0 auto;
-		padding: var(--spacing-8) var(--spacing-6) var(--spacing-16);
+		padding: var(--spacing-10) var(--spacing-6) var(--spacing-20);
 	}
 
 	.search-title {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-3);
 		font-size: var(--font-size-2xl);
 		margin-bottom: var(--spacing-6);
 	}
@@ -90,10 +82,11 @@ const { items: results } = query
 
 	.search-input {
 		flex: 1;
-		padding: var(--spacing-2) var(--spacing-4);
+		padding: var(--spacing-3) var(--spacing-4);
+		font-family: var(--font-body);
 		font-size: var(--font-size-base);
 		border: 1px solid var(--color-border);
-		border-radius: var(--radius);
+		border-radius: 999px;
 		background: var(--color-bg);
 		color: var(--color-text);
 	}
@@ -101,36 +94,33 @@ const { items: results } = query
 	.search-input:focus {
 		outline: none;
 		border-color: var(--color-brand);
+		box-shadow: 0 0 0 3px var(--color-brand-ring);
 	}
 
 	.search-button {
-		padding: var(--spacing-2) var(--spacing-6);
+		padding: var(--spacing-3) var(--spacing-6);
+		font-family: var(--font-body);
 		font-size: var(--font-size-base);
 		background: var(--color-brand);
 		color: var(--color-on-brand);
 		border: none;
-		border-radius: var(--radius);
+		border-radius: 999px;
 		cursor: pointer;
-		font-weight: 500;
+		font-weight: 600;
 	}
 
 	.search-button:hover {
-		opacity: 0.9;
+		background: var(--color-brand-hover);
 	}
 
-	.search-summary {
+	.search-summary,
+	.search-hint {
 		color: var(--color-muted);
 		margin-bottom: var(--spacing-6);
 	}
 
-	.search-hint {
-		color: var(--color-muted);
-	}
-
 	.search-results {
 		list-style: none;
-		padding: 0;
-		margin: 0;
 		display: flex;
 		flex-direction: column;
 	}
@@ -142,10 +132,6 @@ const { items: results } = query
 
 	.search-result:first-child {
 		padding-top: 0;
-	}
-
-	.search-result:last-child {
-		border-bottom: none;
 	}
 
 	.result-link {
@@ -172,11 +158,16 @@ const { items: results } = query
 		color: var(--color-text-secondary);
 	}
 
-	/* FTS returns <mark> wrapping the matched terms */
 	.result-snippet :global(mark) {
 		background: var(--color-brand-ring);
 		color: inherit;
 		padding: 0 0.1em;
 		border-radius: 2px;
+	}
+
+	@media (max-width: 600px) {
+		.search-page {
+			padding: var(--spacing-6) var(--spacing-4) var(--spacing-12);
+		}
 	}
 </style>

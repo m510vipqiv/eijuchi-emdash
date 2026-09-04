@@ -1,32 +1,37 @@
 import type { APIRoute } from "astro";
-import { getEmDashCollection, getSiteSettings } from "emdash";
+import { getEmDashCollection, getTermsForEntries, getSiteSettings } from "emdash";
 
-import { resolveBlogSiteIdentity } from "../utils/site-identity";
+import { resolveBlogSiteIdentity, siteOrigin } from "../utils/site-identity";
+import { primaryCategory, categoryLabel, postHref } from "../utils/categories";
 
-export const GET: APIRoute = async ({ site, url }) => {
-	const siteUrl = site?.toString() || url.origin;
+export const GET: APIRoute = async ({ url }) => {
+	const siteUrl = siteOrigin(url);
 	const { siteTitle, siteTagline } = resolveBlogSiteIdentity(await getSiteSettings());
 
 	const { entries: posts } = await getEmDashCollection("posts", {
+		status: "published",
 		orderBy: { published_at: "desc" },
 		limit: 20,
 	});
 
+	const catsByEntry = await getTermsForEntries(
+		"posts",
+		posts.map((p) => p.data.id),
+		"category",
+	);
+
 	const items = posts
 		.map((post) => {
 			if (!post.data.publishedAt) return null;
-			const pubDate = post.data.publishedAt.toUTCString();
-
-			const postUrl = `${siteUrl}/posts/${post.id}`;
-			const title = escapeXml(post.data.title || "Untitled");
-			const description = escapeXml(post.data.excerpt || "");
-
+			const cat = primaryCategory(catsByEntry.get(post.data.id));
+			const postUrl = `${siteUrl}${postHref(cat, post.id)}`;
 			return `    <item>
-      <title>${title}</title>
+      <title>${escapeXml(post.data.title || "無題")}</title>
       <link>${postUrl}</link>
       <guid isPermaLink="true">${postUrl}</guid>
-      <pubDate>${pubDate}</pubDate>
-      <description>${description}</description>
+      <category>${escapeXml(categoryLabel(cat))}</category>
+      <pubDate>${post.data.publishedAt.toUTCString()}</pubDate>
+      <description>${escapeXml(post.data.excerpt || "")}</description>
     </item>`;
 		})
 		.filter(Boolean)
@@ -37,9 +42,9 @@ export const GET: APIRoute = async ({ site, url }) => {
   <channel>
     <title>${escapeXml(siteTitle)}</title>
     <description>${escapeXml(siteTagline)}</description>
-    <link>${siteUrl}</link>
+    <link>${siteUrl}/</link>
     <atom:link href="${siteUrl}/rss.xml" rel="self" type="application/rss+xml"/>
-    <language>en-us</language>
+    <language>ja</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
 ${items}
   </channel>
