@@ -1,5 +1,5 @@
 ---
-import { getMenu, getEmDashCollection, getSiteSettings } from "emdash";
+import { getMenu, getSiteSettings } from "emdash";
 import {
 	WidgetArea,
 	EmDashHead,
@@ -9,7 +9,15 @@ import {
 import { createPublicPageContext } from "emdash/page";
 import LiveSearch from "emdash/ui/search";
 import { Font } from "astro:assets";
-import { resolveBlogSiteIdentity } from "../utils/site-identity";
+import {
+	resolveBlogSiteIdentity,
+	LOGO_LIGHT_URL,
+	LOGO_DARK_URL,
+	LOGO_WIDTH,
+	LOGO_HEIGHT,
+	siteOrigin,
+} from "../utils/site-identity";
+import { CATEGORIES } from "../utils/categories";
 import "../styles/tokens.css";
 import "../styles/theme.css";
 
@@ -41,20 +49,28 @@ const {
 	author,
 	content,
 } = Astro.props;
-const { siteTitle, siteTagline, siteLogo } = resolveBlogSiteIdentity(await getSiteSettings());
+
+const GTM_ID = "GTM-PB56TC7";
+const ADSENSE_CLIENT = "ca-pub-5799363994039959";
+
+const { siteTitle, siteTagline } = resolveBlogSiteIdentity(await getSiteSettings());
 // If title already includes site title (from getSeoMeta), use as-is
-const fullTitle = title.includes(siteTitle) ? title : `${title} — ${siteTitle}`;
+const fullTitle = title.includes(siteTitle) ? title : `${title} | ${siteTitle}`;
 
-// Fetch primary menu defined in seed
+// Primary menu from admin; falls back to the category list when unset.
 const menu = await getMenu("primary");
+const navItems =
+	menu?.items && menu.items.length > 0
+		? menu.items.map((i) => ({ label: i.label, url: i.url, target: i.target }))
+		: [
+				...CATEGORIES.map((c) => ({ label: c.label, url: `/${c.slug}`, target: undefined })),
+				{ label: "記事一覧", url: "/articles", target: undefined },
+			];
 
-// Optional "social" menu. If a site defines a `social` menu in its seed,
-// it'll render in the footer's "Connect" column. Otherwise that column
-// just shows RSS, avoiding duplication with the "Navigate" column above.
 const socialMenu = await getMenu("social");
 
-// Fetch pages for footer
-const { entries: pages } = await getEmDashCollection("pages");
+const origin = siteOrigin(Astro.url);
+const canonicalUrl = canonical ?? `${origin}${Astro.url.pathname}`;
 
 // Build public page context for plugin contributions
 // SEO data is passed here and rendered securely by EmDashHead
@@ -65,7 +81,7 @@ const pageCtx = createPublicPageContext({
 	title: fullTitle,
 	pageTitle: pageTitle ?? title,
 	description,
-	canonical,
+	canonical: canonicalUrl,
 	image,
 	content,
 	seo: { ogImage: image, robots },
@@ -73,19 +89,24 @@ const pageCtx = createPublicPageContext({
 	siteName: siteTitle,
 });
 
-// Check if user is logged in (for showing admin link)
 const isLoggedIn = !!Astro.locals.user;
+const year = new Date().getFullYear();
+const currentPath = Astro.url.pathname;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="ja">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<Font cssVariable="--font-body" preload />
 		<Font cssVariable="--font-mono" />
 		<title>{fullTitle}</title>
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta property="og:locale" content="ja_JP" />
+		<link rel="alternate" type="application/rss+xml" title={`${siteTitle} RSS`} href="/rss.xml" />
 		<EmDashHead page={pageCtx} />
+		<slot name="head" />
 		<script is:inline>
 			// Apply an explicit theme choice immediately to prevent flash.
 			// With no cookie, color-scheme: light dark follows the OS.
@@ -98,47 +119,103 @@ const isLoggedIn = !!Astro.locals.user;
 				}
 			})();
 		</script>
+		<!-- Google Tag Manager -->
+		<script is:inline define:vars={{ GTM_ID }}>
+			(function (w, d, s, l, i) {
+				w[l] = w[l] || [];
+				w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+				var f = d.getElementsByTagName(s)[0],
+					j = d.createElement(s),
+					dl = l != "dataLayer" ? "&l=" + l : "";
+				j.async = true;
+				j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
+				f.parentNode.insertBefore(j, f);
+			})(window, document, "script", "dataLayer", GTM_ID);
+		</script>
+		<!-- End Google Tag Manager -->
+		<script
+			is:inline
+			async
+			src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+			crossorigin="anonymous"></script>
 	</head>
 	<body>
+		<!-- Google Tag Manager (noscript) -->
+		<noscript
+			><iframe
+				src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+				height="0"
+				width="0"
+				style="display:none;visibility:hidden"></iframe></noscript
+		>
+		<!-- End Google Tag Manager (noscript) -->
 		<EmDashBodyStart page={pageCtx} />
+		<a href="#main" class="skip-link">本文へ移動</a>
 		<header class="site-header">
-			<nav class="nav">
-				<a href="/" class="site-title">
-					{siteLogo
-						? <img src={siteLogo.url} alt={siteLogo.alt || siteTitle} class="site-logo-img" />
-						: siteTitle
-					}
+			<div class="glitch-line" aria-hidden="true"></div>
+			<nav class="nav" aria-label="メインナビゲーション">
+				<a href="/" class="site-title" aria-label={`${siteTitle} ホーム`}>
+					<img
+						src={LOGO_LIGHT_URL}
+						alt={siteTitle}
+						width={LOGO_WIDTH}
+						height={LOGO_HEIGHT}
+						class="site-logo-img site-logo-img--light"
+						fetchpriority="high"
+					/>
+					<img
+						src={LOGO_DARK_URL}
+						alt=""
+						aria-hidden="true"
+						width={LOGO_WIDTH}
+						height={LOGO_HEIGHT}
+						class="site-logo-img site-logo-img--dark"
+					/>
 				</a>
+				<div class="nav-links">
+					{
+						navItems.map((item) => (
+							<a
+								href={item.url}
+								target={item.target}
+								aria-current={currentPath === item.url || currentPath.startsWith(item.url + "/") ? "page" : undefined}
+							>
+								{item.label}
+							</a>
+						))
+					}
+				</div>
 				<div class="nav-right">
 					<LiveSearch
-						placeholder="Search..."
+						placeholder="サイト内検索"
 						class="site-search"
 						inputClass="site-search-input"
 						resultsClass="site-search-results"
 						resultClass="site-search-result"
 						collections={["posts", "pages"]}
 					/>
-					<div class="nav-links">
-						{
-							menu?.items.map((item) => (
-								<a href={item.url} target={item.target}>
-									{item.label}
-								</a>
-							))
-						}
-					</div>
+					<button
+						type="button"
+						class="theme-toggle"
+						id="theme-toggle"
+						aria-label="テーマを切り替え"
+						title="ライト / ダーク"
+					>
+						<svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+						<svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+					</button>
+					{
+						isLoggedIn && (
+							<a href="/_emdash/admin" class="nav-admin">
+								管理
+							</a>
+						)
+					}
 				</div>
-				{
-					isLoggedIn && (
-						<a href="/_emdash/admin" class="nav-admin">
-							Admin
-						</a>
-					)
-				}
 			</nav>
 		</header>
 
-		<main>
+		<main id="main">
 			<slot />
 		</main>
 
@@ -146,51 +223,41 @@ const isLoggedIn = !!Astro.locals.user;
 			<div class="footer-inner">
 				<div class="footer-grid">
 					<div class="footer-brand">
-						<a href="/" class="footer-logo">
-							{siteLogo
-								? <img src={siteLogo.url} alt={siteLogo.alt || siteTitle} class="footer-logo-img" />
-								: siteTitle
-							}
+						<a href="/" class="footer-logo" aria-label={siteTitle}>
+							<img src={LOGO_LIGHT_URL} alt={siteTitle} width={LOGO_WIDTH} height={LOGO_HEIGHT} class="footer-logo-img site-logo-img--light" loading="lazy" />
+							<img src={LOGO_DARK_URL} alt="" aria-hidden="true" width={LOGO_WIDTH} height={LOGO_HEIGHT} class="footer-logo-img site-logo-img--dark" loading="lazy" />
 						</a>
 						<p class="footer-tagline">{siteTagline}</p>
 					</div>
 					<div class="footer-nav">
-						<h4 class="footer-heading">Navigate</h4>
+						<h2 class="footer-heading">カテゴリ</h2>
 						<ul class="footer-links">
-							<li><a href="/">Home</a></li>
-							<li><a href="/posts">All Posts</a></li>
-							{
-								pages.slice(0, 3).map((page) => (
-									<li>
-										<a href={`/pages/${page.data.slug || page.id}`}>
-											{page.data.title}
-										</a>
-									</li>
-								))
-							}
+							{CATEGORIES.map((c) => (
+								<li><a href={`/${c.slug}`}>{c.label}</a></li>
+							))}
+							<li><a href="/articles">記事一覧</a></li>
+							<li><a href="/tags">タグ一覧</a></li>
 						</ul>
 					</div>
 					<div class="footer-nav">
-						<h4 class="footer-heading">Connect</h4>
+						<h2 class="footer-heading">サイト情報</h2>
 						<ul class="footer-links">
+							<li><a href="/privacy">プライバシーポリシー</a></li>
+							<li><a href="/contact">お問い合わせ</a></li>
+							<li><a href="/rss.xml">RSS</a></li>
 							{
 								socialMenu?.items.map((item) => (
 									<li>
 										<a
 											href={item.url}
 											target={item.target}
-											rel={
-												item.target === "_blank"
-													? "noopener noreferrer"
-													: undefined
-											}
+											rel={item.target === "_blank" ? "noopener noreferrer" : undefined}
 										>
 											{item.label}
 										</a>
 									</li>
 								))
 							}
-							<li><a href="/rss.xml">RSS Feed</a></li>
 						</ul>
 					</div>
 					<div class="footer-widgets-section">
@@ -198,148 +265,42 @@ const isLoggedIn = !!Astro.locals.user;
 					</div>
 				</div>
 				<div class="footer-bottom">
-					<p class="footer-copyright">
-						Powered by <a href="https://emdashcms.com">EmDash</a>
-					</p>
-					<div class="theme-switcher">
-						<button
-							type="button"
-							class="theme-btn"
-							data-theme="light"
-							aria-label="Light mode"
-						>
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								><circle cx="12" cy="12" r="5"></circle><line
-									x1="12"
-									y1="1"
-									x2="12"
-									y2="3"></line><line x1="12" y1="21" x2="12" y2="23"
-								></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"
-								></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"
-								></line><line x1="1" y1="12" x2="3" y2="12"></line><line
-									x1="21"
-									y1="12"
-									x2="23"
-									y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"
-								></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"
-								></line></svg
-							>
-						</button>
-						<button
-							type="button"
-							class="theme-btn"
-							data-theme="dark"
-							aria-label="Dark mode"
-						>
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
-								></path></svg
-							>
-						</button>
-						<button
-							type="button"
-							class="theme-btn"
-							data-theme="system"
-							aria-label="System theme"
-						>
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								><rect x="2" y="3" width="20" height="14" rx="2" ry="2"
-								></rect><line x1="8" y1="21" x2="16" y2="21"></line><line
-									x1="12"
-									y1="17"
-									x2="12"
-									y2="21"></line></svg
-							>
-						</button>
-					</div>
+					<p class="footer-copyright">© {year} {siteTitle}</p>
+					<p class="footer-note">Powered by <a href="https://emdashcms.com" rel="noopener">EmDash</a></p>
 				</div>
 			</div>
 		</footer>
 
 		<script>
-			// Theme switcher
-			const THEME_REGEX = /theme=([^;]+)/;
-			const themeBtns =
-				document.querySelectorAll<HTMLButtonElement>(".theme-btn");
+			// Theme toggle: light <-> dark, stored in a cookie so SSR can read it later.
 			const root = document.documentElement;
+			const btn = document.getElementById("theme-toggle");
 
-			function setCookie(
-				name: string,
-				value: string,
-				maxAge: number = 31536000
-			) {
+			function setCookie(name: string, value: string, maxAge: number = 31536000) {
 				const secure = location.protocol === "https:" ? "; Secure" : "";
-				if (value === "") {
-					document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax${secure}`;
-				} else {
-					document.cookie = `${name}=${value}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
-				}
+				document.cookie = `${name}=${value}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
 			}
 
-			function setTheme(theme: string) {
-				if (theme === "system") {
-					setCookie("theme", "");
-					root.classList.remove("light", "dark");
-				} else {
-					setCookie("theme", theme);
-					root.classList.remove("light", "dark");
-					root.classList.add(theme);
-				}
-				updateActiveBtn(theme);
+			function currentTheme(): "light" | "dark" {
+				if (root.classList.contains("dark")) return "dark";
+				if (root.classList.contains("light")) return "light";
+				return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 			}
 
-			function updateActiveBtn(theme: string) {
-				themeBtns.forEach((btn) => {
-					btn.classList.toggle("active", btn.dataset.theme === theme);
-				});
-			}
-
-			function getStoredTheme(): string {
-				const match = document.cookie.match(THEME_REGEX);
-				return match ? match[1] : "system";
-			}
-
-			// Initialize
-			const storedTheme = getStoredTheme();
-			setTheme(storedTheme);
-
-			themeBtns.forEach((btn) => {
-				btn.addEventListener("click", () => {
-					setTheme(btn.dataset.theme || "system");
-				});
+			btn?.addEventListener("click", () => {
+				const next = currentTheme() === "dark" ? "light" : "dark";
+				root.classList.remove("light", "dark");
+				root.classList.add(next);
+				setCookie("theme", next);
 			});
+
+			// Keep aria state in sync
+			const sync = () => btn?.setAttribute("aria-pressed", currentTheme() === "dark" ? "true" : "false");
+			sync();
+			new MutationObserver(sync).observe(root, { attributes: true, attributeFilter: ["class"] });
 		</script>
 
 		<style is:global>
-			/*
-			 * Establish layer order: "base" has lower priority than unlayered
-			 * styles, so theme.css overrides always win regardless of source
-			 * order in the bundled CSS.
-			 */
 			@layer base;
 
 			@layer base {
@@ -371,14 +332,6 @@ const isLoggedIn = !!Astro.locals.user;
 					padding: 0;
 				}
 
-				/*
-				 * Design tokens live in src/styles/tokens.css. Colors are
-				 * defined with light-dark(); these rules pin the scheme when
-				 * the footer switcher sets an explicit choice. With no class,
-				 * color-scheme: light dark follows the OS preference. The
-				 * @supports guard keeps the toggle from forcing dark UA form
-				 * controls on browsers stuck on the plain-light fallback.
-				 */
 				@supports (color: light-dark(#000, #fff)) {
 					:root.light {
 						color-scheme: light;
@@ -441,70 +394,173 @@ const isLoggedIn = !!Astro.locals.user;
 					background: var(--color-brand);
 					color: var(--color-on-brand);
 				}
+
+				/* Logo variant switching (OS preference + explicit toggle) */
+				.site-logo-img--dark {
+					display: none;
+				}
+				@media (prefers-color-scheme: dark) {
+					:root:not(.light) .site-logo-img--light {
+						display: none;
+					}
+					:root:not(.light) .site-logo-img--dark {
+						display: block;
+					}
+				}
+				:root.dark .site-logo-img--light {
+					display: none;
+				}
+				:root.dark .site-logo-img--dark {
+					display: block;
+				}
+
+				/* Theme toggle icon switching */
+				.theme-toggle .icon-moon {
+					display: none;
+				}
+				@media (prefers-color-scheme: dark) {
+					:root:not(.light) .theme-toggle .icon-sun {
+						display: none;
+					}
+					:root:not(.light) .theme-toggle .icon-moon {
+						display: block;
+					}
+				}
+				:root.dark .theme-toggle .icon-sun {
+					display: none;
+				}
+				:root.dark .theme-toggle .icon-moon {
+					display: block;
+				}
 			}
 		</style>
 
 		<style>
+			.skip-link {
+				position: absolute;
+				left: -999px;
+				top: 8px;
+				z-index: 1000;
+				padding: var(--spacing-2) var(--spacing-3);
+				background: var(--color-brand);
+				color: var(--color-on-brand);
+				border-radius: var(--radius);
+			}
+
+			.skip-link:focus {
+				left: 8px;
+			}
+
 			.site-header {
 				position: sticky;
 				top: 0;
 				z-index: 100;
-				background: color-mix(in srgb, var(--color-bg) 65%, transparent);
-				backdrop-filter: blur(12px);
-				-webkit-backdrop-filter: blur(12px);
+				background: color-mix(in srgb, var(--color-bg) 72%, transparent);
+				backdrop-filter: blur(14px) saturate(1.4);
+				-webkit-backdrop-filter: blur(14px) saturate(1.4);
 				border-bottom: 1px solid var(--color-border-subtle);
+			}
+
+			.glitch-line {
+				height: 3px;
+				background: var(--gradient-glitch);
 			}
 
 			.nav {
 				display: flex;
-				justify-content: space-between;
 				align-items: center;
+				gap: var(--spacing-8);
 				max-width: var(--wide-width);
 				margin: 0 auto;
-				padding: var(--spacing-4) var(--spacing-6);
+				padding: 0 var(--spacing-6);
 				height: var(--nav-height);
 			}
 
 			.site-title {
-				font-size: var(--font-size-lg);
-				font-weight: 600;
-				color: var(--color-text);
-				text-decoration: none;
-				letter-spacing: var(--tracking-snug);
-			}
-
-			.site-title:hover {
-				color: var(--color-brand);
+				display: block;
+				flex: 0 0 auto;
+				line-height: 0;
 			}
 
 			.site-logo-img {
-				height: 48px;
+				height: 40px;
 				width: auto;
 				display: block;
-				margin: -8px 0;
+				transition: filter var(--transition-fast);
+			}
+
+			.site-title:hover .site-logo-img {
+				filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-brand) 55%, transparent));
+			}
+
+			.nav-links {
+				display: flex;
+				align-items: center;
+				gap: var(--spacing-1);
+				font-size: var(--font-size-sm);
+				font-weight: 500;
+			}
+
+			.nav-links a {
+				position: relative;
+				padding: var(--spacing-2) var(--spacing-3);
+				border-radius: var(--radius);
+				color: var(--color-text-secondary);
+				text-decoration: none;
+				white-space: nowrap;
+				transition:
+					color var(--transition-fast),
+					background var(--transition-fast);
+			}
+
+			.nav-links a:hover {
+				color: var(--color-text);
+				background: var(--color-surface);
+			}
+
+			.nav-links a[aria-current="page"] {
+				color: var(--color-text);
+			}
+
+			.nav-links a[aria-current="page"]::after {
+				content: "";
+				position: absolute;
+				left: var(--spacing-3);
+				right: var(--spacing-3);
+				bottom: 2px;
+				height: 2px;
+				border-radius: 2px;
+				background: var(--gradient-glitch-soft);
 			}
 
 			.nav-right {
 				display: flex;
 				align-items: center;
-				gap: var(--spacing-6);
+				gap: var(--spacing-3);
 				margin-inline-start: auto;
 			}
 
-			.nav-links {
-				display: flex;
-				gap: var(--spacing-5);
-				font-size: var(--font-size-sm);
+			.theme-toggle {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 38px;
+				height: 38px;
+				border-radius: 999px;
+				border: 1px solid var(--color-border);
+				background: var(--color-bg);
+				color: var(--color-text-secondary);
+				cursor: pointer;
+				transition:
+					color var(--transition-fast),
+					border-color var(--transition-fast),
+					transform var(--transition-fast);
 			}
 
-			.nav-links a {
-				text-decoration: none;
-				color: var(--color-text);
-				transition: color var(--transition-fast);
-			}
-
-			.nav-links a:hover {
+			.theme-toggle:hover {
 				color: var(--color-brand);
+				border-color: var(--color-brand);
+				transform: rotate(-12deg);
 			}
 
 			.nav-admin {
@@ -531,7 +587,7 @@ const isLoggedIn = !!Astro.locals.user;
 				font-family: var(--font-body);
 				font-size: var(--font-size-sm);
 				border: 1px solid var(--color-border);
-				border-radius: var(--radius);
+				border-radius: 999px;
 				background: var(--color-bg);
 				color: var(--color-text);
 				transition:
@@ -553,14 +609,14 @@ const isLoggedIn = !!Astro.locals.user;
 			:global(.site-search-results) {
 				position: absolute;
 				top: 100%;
-				left: 0;
 				right: 0;
+				width: min(420px, 90vw);
 				margin-top: var(--spacing-2);
 				background: var(--color-bg);
 				border: 1px solid var(--color-border);
 				border-radius: var(--radius-lg);
 				box-shadow: var(--shadow-lg);
-				max-height: 400px;
+				max-height: 420px;
 				overflow-y: auto;
 				z-index: 1000;
 			}
@@ -595,7 +651,7 @@ const isLoggedIn = !!Astro.locals.user;
 
 			:global(.site-search-result .emdash-live-search-result-title) {
 				display: block;
-				font-weight: 500;
+				font-weight: 600;
 				font-size: var(--font-size-sm);
 			}
 
@@ -619,6 +675,7 @@ const isLoggedIn = !!Astro.locals.user;
 			:global(.site-search-result .emdash-live-search-result-snippet mark) {
 				font-weight: 600;
 				color: var(--color-text);
+				background: var(--color-brand-ring);
 			}
 
 			main {
@@ -645,24 +702,21 @@ const isLoggedIn = !!Astro.locals.user;
 			}
 
 			.footer-brand {
-				max-width: 280px;
+				max-width: 300px;
 			}
 
 			.footer-logo {
-				font-size: var(--font-size-lg);
-				font-weight: 600;
-				color: var(--color-text);
-				text-decoration: none;
-				letter-spacing: var(--tracking-snug);
+				display: inline-block;
+				line-height: 0;
 			}
 
 			.footer-logo-img {
-				height: 24px;
+				height: 34px;
 				width: auto;
 			}
 
 			.footer-tagline {
-				margin-top: var(--spacing-3);
+				margin-top: var(--spacing-4);
 				font-size: var(--font-size-sm);
 				color: var(--color-muted);
 				line-height: var(--leading-relaxed);
@@ -674,8 +728,7 @@ const isLoggedIn = !!Astro.locals.user;
 
 			.footer-heading {
 				font-size: var(--font-size-xs);
-				font-weight: 500;
-				text-transform: uppercase;
+				font-weight: 700;
 				letter-spacing: var(--tracking-wider);
 				color: var(--color-muted);
 				margin-bottom: var(--spacing-4);
@@ -697,7 +750,7 @@ const isLoggedIn = !!Astro.locals.user;
 			}
 
 			.footer-links a:hover {
-				color: var(--color-text);
+				color: var(--color-brand);
 			}
 
 			.footer-widgets-section :global(.widget-area) {
@@ -710,8 +763,7 @@ const isLoggedIn = !!Astro.locals.user;
 
 			.footer-widgets-section :global(.widget__title) {
 				font-size: var(--font-size-xs);
-				font-weight: 500;
-				text-transform: uppercase;
+				font-weight: 700;
 				letter-spacing: var(--tracking-wider);
 				color: var(--color-muted);
 				margin-bottom: var(--spacing-4);
@@ -727,55 +779,25 @@ const isLoggedIn = !!Astro.locals.user;
 				display: flex;
 				justify-content: space-between;
 				align-items: center;
+				gap: var(--spacing-4);
 				padding-top: var(--spacing-6);
 				border-top: 1px solid var(--color-border);
-			}
-
-			.footer-copyright {
 				font-size: var(--font-size-sm);
 				color: var(--color-muted);
 			}
 
-			.footer-copyright a {
+			.footer-note a {
 				color: var(--color-text-secondary);
 			}
 
-			/* Theme switcher */
-			.theme-switcher {
-				display: flex;
-				gap: var(--spacing-1);
-				padding: var(--spacing-1);
-				background: var(--color-surface);
-				border-radius: var(--radius);
-			}
+			@media (max-width: 1000px) {
+				.nav {
+					gap: var(--spacing-4);
+				}
 
-			.theme-btn {
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				width: 32px;
-				height: 28px;
-				background: transparent;
-				border: none;
-				color: var(--color-muted);
-				border-radius: var(--radius);
-				cursor: pointer;
-				transition: all var(--transition-fast);
-			}
-
-			.theme-btn:hover {
-				color: var(--color-text-secondary);
-			}
-
-			.theme-btn.active {
-				background: var(--color-bg);
-				color: var(--color-text);
-				box-shadow: var(--shadow-sm);
-			}
-
-			.theme-btn svg {
-				width: 16px;
-				height: 16px;
+				.site-search {
+					--search-input-width: 150px;
+				}
 			}
 
 			@media (max-width: 900px) {
@@ -790,10 +812,9 @@ const isLoggedIn = !!Astro.locals.user;
 				}
 			}
 
-			@media (max-width: 640px) {
+			@media (max-width: 760px) {
 				.site-header {
 					position: relative;
-					border-bottom: none;
 				}
 
 				.nav {
@@ -802,52 +823,41 @@ const isLoggedIn = !!Astro.locals.user;
 					align-items: center;
 					height: auto;
 					column-gap: var(--spacing-3);
-					row-gap: var(--spacing-2);
+					row-gap: var(--spacing-3);
 					padding: var(--spacing-3) var(--spacing-4);
 				}
 
 				.site-title {
 					grid-column: 1;
 					grid-row: 1;
-					font-size: var(--font-size-base);
-					min-width: 0;
+				}
+
+				.site-logo-img {
+					height: 34px;
 				}
 
 				.nav-right {
-					grid-column: 1 / -1;
-					grid-row: 2;
-					display: grid;
-					row-gap: var(--spacing-2);
+					grid-column: 2;
+					grid-row: 1;
+					margin-inline-start: 0;
 				}
 
 				.site-search {
-					grid-column: 1;
-					width: 100%;
-					max-width: none;
-				}
-
-				:global(.site-search-input) {
-					width: 100% !important;
-					padding: var(--spacing-1) var(--spacing-2) !important;
-					font-size: var(--font-size-sm) !important;
+					display: none;
 				}
 
 				.nav-links {
-					grid-column: 1;
-					display: flex;
-					column-gap: var(--spacing-3);
-					row-gap: var(--spacing-1);
-					flex-wrap: wrap;
-					justify-content: flex-start;
+					grid-column: 1 / -1;
+					grid-row: 2;
+					overflow-x: auto;
+					scrollbar-width: none;
+					-webkit-overflow-scrolling: touch;
+					margin: 0 calc(-1 * var(--spacing-4));
+					padding: 0 var(--spacing-4);
 				}
 
-				.nav-admin {
-					grid-column: 2;
-					grid-row: 1;
-					justify-self: end;
-					font-size: var(--font-size-xs);
-					margin-inline-start: 0;
-					white-space: nowrap;
+				.nav-links::-webkit-scrollbar {
+					display: none;
 				}
 
 				.footer-grid {
@@ -860,13 +870,7 @@ const isLoggedIn = !!Astro.locals.user;
 
 				.footer-bottom {
 					flex-direction: column;
-					gap: var(--spacing-4);
 					text-align: center;
-				}
-
-				.footer-controls {
-					flex-wrap: wrap;
-					justify-content: center;
 				}
 			}
 		</style>
@@ -876,12 +880,8 @@ const isLoggedIn = !!Astro.locals.user;
 			document.addEventListener("keydown", (e) => {
 				if ((e.metaKey || e.ctrlKey) && e.key === "k") {
 					e.preventDefault();
-					const searchInput = document.querySelector(
-						".site-search-input"
-					) as HTMLInputElement;
-					if (searchInput) {
-						searchInput.focus();
-					}
+					const searchInput = document.querySelector(".site-search-input") as HTMLInputElement | null;
+					searchInput?.focus();
 				}
 			});
 		</script>
