@@ -117,6 +117,13 @@ const breadcrumbJsonLd = {
 					slug === "contact" && (
 						<section class="contact-form" aria-label="お問い合わせフォーム">
 							<ContactForm id="contact" />
+							<script is:inline>
+								// Keep the Japanese submit label after the plugin's client script resets it.
+								document.querySelectorAll("form.ec-form").forEach(function (f) {
+									var b = f.querySelector(".ec-form-submit");
+									if (b && !f.dataset.submitLabel) f.dataset.submitLabel = b.textContent.trim();
+								});
+							</script>
 						</section>
 					)
 				}
@@ -365,6 +372,8 @@ const breadcrumbJsonLd = {
 		font-size: var(--font-size-base);
 		color: var(--color-text);
 		width: 100%;
+		text-align: left;
+		text-wrap: initial;
 	}
 
 	.contact-form :global(.ec-form-input:focus) {
