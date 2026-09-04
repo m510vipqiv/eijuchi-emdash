@@ -1,0 +1,218 @@
+---
+/**
+ * /articles — every published post, newest first, cursor-paginated.
+ * (WordPress /posts/ and /top/ 301 here.)
+ */
+import { getEmDashCollection, getTermsForEntries, getSiteSettings } from "emdash";
+import Base from "../layouts/Base.astro";
+import { getReadingTime } from "../utils/reading-time";
+import { resolveBlogSiteIdentity, siteOrigin } from "../utils/site-identity";
+import { primaryCategory, categoryLabel, postHref, formatDateJa, isoDate } from "../utils/categories";
+
+const PER_PAGE = 30;
+const cursor = Astro.url.searchParams.get("cursor") ?? undefined;
+const origin = siteOrigin(Astro.url);
+const { siteTitle } = resolveBlogSiteIdentity(await getSiteSettings());
+
+const { entries: posts, cacheHint, nextCursor } = await getEmDashCollection("posts", {
+	status: "published",
+	orderBy: { published_at: "desc" },
+	limit: PER_PAGE,
+	cursor,
+});
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const ids = posts.map((p) => p.data.id);
+const [catsByEntry, tagsByEntry] = await Promise.all([
+	getTermsForEntries("posts", ids, "category"),
+	getTermsForEntries("posts", ids, "tag"),
+]);
+
+const rows = posts.map((post) => {
+	const cat = primaryCategory(catsByEntry.get(post.data.id));
+	return {
+		post,
+		cat,
+		catLabel: categoryLabel(cat),
+		tags: (tagsByEntry.get(post.data.id) ?? []).slice(0, 3),
+	};
+});
+---
+
+<Base
+	title="記事一覧"
+	description={`${siteTitle}の全記事を新着順に掲載しています。`}
+	canonical={`${origin}/articles${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`}
+	robots={cursor ? "noindex, follow" : null}
+>
+	<div class="posts-page">
+		<header class="page-header">
+			<h1 class="page-title"><span class="glitch-bar" aria-hidden="true"></span>記事一覧</h1>
+			<p class="page-description">新着順</p>
+		</header>
+
+		{
+			posts.length === 0 ? (
+				<p class="empty">記事がまだありません。</p>
+			) : (
+				<div class="posts-list">
+					{rows.map(({ post, cat, catLabel, tags }) => (
+						<article class="post-item">
+							<a href={postHref(cat, post.id)} class="post-link">
+								<div class="post-meta">
+									<span class:list={["cat-chip", `cat-chip--${cat}`]}>{catLabel}</span>
+									{post.data.publishedAt && (
+										<time datetime={isoDate(post.data.publishedAt)}>{formatDateJa(post.data.publishedAt)}</time>
+									)}
+									<span>約{getReadingTime(post.data.content)}分</span>
+								</div>
+								<h2 class="post-title">{post.data.title}</h2>
+								{post.data.excerpt && <p class="post-excerpt">{post.data.excerpt}</p>}
+							</a>
+							{tags.length > 0 && (
+								<div class="post-tags">
+									{tags.map((t) => (
+										<a href={`/tag/${t.slug}`} class="tag-pill">
+											{t.label}
+										</a>
+									))}
+								</div>
+							)}
+						</article>
+					))}
+				</div>
+			)
+		}
+
+		{
+			nextCursor && (
+				<nav class="pagination" aria-label="ページ送り">
+					<a href={`/articles?cursor=${encodeURIComponent(nextCursor)}`} class="pagination-next" rel="next">
+						さらに読み込む →
+					</a>
+				</nav>
+			)
+		}
+	</div>
+</Base>
+
+<style>
+	.posts-page {
+		max-width: 800px;
+		margin: 0 auto;
+		padding: var(--spacing-10) var(--spacing-6) var(--spacing-20);
+	}
+
+	.page-header {
+		margin-bottom: var(--spacing-10);
+	}
+
+	.page-title {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-3);
+		font-size: var(--font-size-3xl);
+		font-weight: var(--font-weight-display);
+		margin-bottom: var(--spacing-2);
+	}
+
+	.page-description,
+	.empty {
+		color: var(--color-muted);
+	}
+
+	.posts-list {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.post-item {
+		padding: var(--spacing-6) 0;
+		border-bottom: 1px solid var(--color-border-subtle);
+	}
+
+	.post-item:first-child {
+		padding-top: 0;
+	}
+
+	.post-link {
+		display: block;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.post-meta {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: var(--spacing-2) var(--spacing-3);
+		font-size: var(--font-size-xs);
+		color: var(--color-muted);
+		margin-bottom: var(--spacing-2);
+	}
+
+	.post-title {
+		font-size: var(--font-size-xl);
+		font-weight: var(--font-weight-heading);
+		line-height: var(--leading-snug);
+		margin-bottom: var(--spacing-2);
+		transition: color var(--transition-fast);
+	}
+
+	.post-link:hover .post-title {
+		color: var(--color-brand);
+	}
+
+	.post-excerpt {
+		font-size: var(--font-size-sm);
+		line-height: var(--leading-relaxed);
+		color: var(--color-text-secondary);
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.post-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--spacing-2);
+		margin-top: var(--spacing-3);
+	}
+
+	.pagination {
+		display: flex;
+		justify-content: center;
+		margin-top: var(--spacing-12);
+	}
+
+	.pagination-next {
+		display: inline-block;
+		padding: var(--spacing-3) var(--spacing-8);
+		border-radius: 999px;
+		border: 1px solid var(--color-border);
+		color: var(--color-text);
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+	.pagination-next:hover {
+		border-color: var(--color-brand);
+		color: var(--color-brand);
+		box-shadow: 0 0 0 3px var(--color-brand-ring);
+	}
+
+	@media (max-width: 600px) {
+		.posts-page {
+			padding: var(--spacing-6) var(--spacing-4) var(--spacing-12);
+		}
+
+		.page-title {
+			font-size: var(--font-size-2xl);
+		}
+
+		.post-title {
+			font-size: var(--font-size-lg);
+		}
+	}
+</style>
