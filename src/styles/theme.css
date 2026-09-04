@@ -193,3 +193,13 @@ h4 {
 .nav-admin {
 	margin-inline-start: var(--spacing-5);
 }
+
+/*
+  The WordPress import created a "未分類" category whose slug is stored
+  percent-encoded; EmDash's term API cannot address it, so it can't be
+  deleted from the admin yet. It has 0 posts — hide it from widgets.
+*/
+.widget-categories li:has(a[href*="%e6%9c%aa%e5%88%86%e9%a1%9e"]),
+.widget-categories li:has(a[href*="%25e6%259c%25aa"]) {
+	display: none;
+}
