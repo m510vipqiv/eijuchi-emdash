@@ -1,6 +1,7 @@
 ---
-import type { MediaValue, ContentBylineCredit } from "emdash";
+import type { MediaValue } from "emdash";
 import { Image } from "emdash/ui";
+import { formatDateJa, isoDate } from "../utils/categories";
 
 interface Props {
 	title: string;
@@ -9,8 +10,11 @@ interface Props {
 	href: string;
 	date?: Date;
 	readingTime?: number;
+	category?: { slug: string; label: string };
 	tags?: Array<{ slug: string; label: string }>;
-	bylines?: ContentBylineCredit[];
+	/** Render the title as h3 (when the card sits under an h2 section title) */
+	headingLevel?: "h2" | "h3";
+	eager?: boolean;
 }
 
 const {
@@ -20,17 +24,13 @@ const {
 	href,
 	date,
 	readingTime,
+	category,
 	tags,
-	bylines,
+	headingLevel = "h3",
 } = Astro.props;
 
-const formattedDate = date
-	? date.toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-		})
-	: null;
+const Heading = headingLevel;
+const formattedDate = formatDateJa(date);
 ---
 
 <article class="post-card">
@@ -41,63 +41,32 @@ const formattedDate = date
 					<Image image={featuredImage} />
 				</div>
 			) : (
-				<div class="card-placeholder" />
+				<div class="card-placeholder" aria-hidden="true">
+					<span>永住地</span>
+				</div>
 			)
 		}
 		<div class="card-body">
 			<div class="card-meta">
 				{
-					bylines && bylines.length > 0 && (
-						<>
-							<div class="card-bylines">
-								{bylines.slice(0, 1).map((credit) => (
-									<span class="card-byline">
-										{credit.byline.avatarMediaId && (
-											<img
-												src={`/_emdash/api/media/file/${credit.byline.avatarMediaId}`}
-												alt={credit.byline.displayName}
-												class="card-byline-avatar"
-											/>
-										)}
-										<span class="card-byline-name">
-											{credit.byline.displayName}
-										</span>
-									</span>
-								))}
-								{bylines.length > 1 && (
-									<span
-										class="byline-more"
-										data-tooltip={bylines
-											.slice(1)
-											.map((c) => c.byline.displayName)
-											.join(", ")}
-										title={bylines
-											.slice(1)
-											.map((c) => c.byline.displayName)
-											.join(", ")}
-										tabindex="0"
-									>
-										+{bylines.length - 1}
-									</span>
-								)}
-							</div>
-							{(formattedDate || readingTime) && <span class="meta-dot" />}
-						</>
+					category && (
+						<span class:list={["cat-chip", `cat-chip--${category.slug}`]}>
+							{category.label}
+						</span>
 					)
 				}
-				{formattedDate && <time>{formattedDate}</time>}
-				{formattedDate && readingTime && <span class="meta-dot" />}
-				{readingTime && <span>{readingTime} min</span>}
+				{formattedDate && <time datetime={isoDate(date)}>{formattedDate}</time>}
+				{readingTime && <span class="card-read">約{readingTime}分</span>}
 			</div>
-			<h2 class="card-title">{title}</h2>
+			<Heading class="card-title">{title}</Heading>
 			{excerpt && <p class="card-excerpt">{excerpt}</p>}
 		</div>
 	</a>
 	{
 		tags && tags.length > 0 && (
 			<div class="card-tags">
-				{tags.slice(0, 2).map((tag) => (
-					<a href={`/tag/${tag.slug}`} class="card-tag">
+				{tags.slice(0, 3).map((tag) => (
+					<a href={`/tag/${tag.slug}`} class="tag-pill">
 						{tag.label}
 					</a>
 				))}
@@ -110,74 +79,101 @@ const formattedDate = date
 	.post-card {
 		display: flex;
 		flex-direction: column;
+		height: 100%;
 	}
 
 	.card-link {
 		display: block;
 		text-decoration: none;
 		color: inherit;
+		flex: 1;
 	}
 
-	.card-image {
-		aspect-ratio: 16 / 10;
+	.card-image,
+	.card-placeholder {
+		position: relative;
+		aspect-ratio: 16 / 9;
 		overflow: hidden;
 		border-radius: var(--radius-lg);
 		background: var(--color-surface);
 		margin-bottom: var(--spacing-4);
+		border: 1px solid var(--color-border-subtle);
+		transition:
+			box-shadow var(--transition-base),
+			transform var(--transition-base);
 	}
 
 	.card-image img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		transition: transform 0.3s ease;
+		transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+	}
+
+	.card-link:hover .card-image,
+	.card-link:hover .card-placeholder {
+		box-shadow: var(--shadow-card);
+		transform: translateY(-2px);
 	}
 
 	.card-link:hover .card-image img {
-		transform: scale(1.03);
+		transform: scale(1.04);
+	}
+
+	/* Glitch edge on hover */
+	.card-image::after {
+		content: "";
+		position: absolute;
+		inset: auto 0 0 0;
+		height: 3px;
+		background: var(--gradient-glitch);
+		transform: scaleX(0);
+		transform-origin: left;
+		transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+	}
+
+	.card-link:hover .card-image::after {
+		transform: scaleX(1);
 	}
 
 	.card-placeholder {
-		aspect-ratio: 16 / 10;
-		border-radius: var(--radius-lg);
-		background: var(--color-surface);
-		margin-bottom: var(--spacing-4);
-	}
-
-	.card-body {
-		flex: 1;
+		display: grid;
+		place-items: center;
+		color: var(--color-muted);
+		font-weight: 800;
+		font-size: var(--font-size-2xl);
+		letter-spacing: 0.2em;
+		background:
+			radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--color-brand) 14%, transparent), transparent 55%),
+			radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 55%),
+			var(--color-surface);
 	}
 
 	.card-meta {
 		display: flex;
 		align-items: center;
 		flex-wrap: wrap;
-		column-gap: var(--spacing-3);
-		row-gap: 0;
-		font-size: var(--font-size-sm);
+		gap: var(--spacing-2) var(--spacing-3);
+		font-size: var(--font-size-xs);
 		color: var(--color-muted);
 		margin-bottom: var(--spacing-2);
 	}
 
 	.card-meta time,
-	.card-meta span:not(.meta-dot) {
+	.card-read {
 		white-space: nowrap;
 	}
 
-	.meta-dot {
-		width: 3px;
-		height: 3px;
-		border-radius: 50%;
-		background: var(--color-muted);
-	}
-
 	.card-title {
-		font-size: var(--font-size-xl);
+		font-size: var(--font-size-lg);
 		font-weight: var(--font-weight-heading);
 		line-height: var(--leading-snug);
-		letter-spacing: var(--tracking-snug);
 		margin-bottom: var(--spacing-2);
 		transition: color var(--transition-fast);
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
 	}
 
 	.card-link:hover .card-title {
@@ -185,7 +181,7 @@ const formattedDate = date
 	}
 
 	.card-excerpt {
-		font-size: var(--font-size-base);
+		font-size: var(--font-size-sm);
 		line-height: var(--leading-relaxed);
 		color: var(--color-text-secondary);
 		display: -webkit-box;
@@ -199,81 +195,5 @@ const formattedDate = date
 		flex-wrap: wrap;
 		gap: var(--spacing-2);
 		margin-top: var(--spacing-3);
-	}
-
-	.card-tag {
-		display: inline-block;
-		padding: var(--tag-padding-y) var(--spacing-2);
-		font-size: var(--font-size-xs);
-		color: var(--color-text-secondary);
-		background: var(--color-surface);
-		border-radius: var(--radius);
-		text-decoration: none;
-		transition:
-			color var(--transition-fast),
-			background var(--transition-fast);
-	}
-
-	.card-tag:hover {
-		color: var(--color-text);
-		background: var(--color-border);
-	}
-
-	/* Byline styles */
-	.card-bylines {
-		display: flex;
-		align-items: center;
-		gap: 2px;
-		white-space: nowrap;
-	}
-
-	.card-byline {
-		display: inline-flex;
-		align-items: center;
-		gap: var(--spacing-1);
-	}
-
-	.card-byline-avatar {
-		width: var(--avatar-size-xs);
-		height: var(--avatar-size-xs);
-		border-radius: 50%;
-		object-fit: cover;
-	}
-
-	.card-byline-name {
-		font-weight: 500;
-		color: var(--color-text-secondary);
-	}
-
-	.byline-more {
-		position: relative;
-		font-size: var(--font-size-xs);
-		color: var(--color-muted);
-		margin-left: 2px;
-		cursor: default;
-		border-radius: var(--radius);
-		outline-offset: 2px;
-	}
-
-	.byline-more:focus-visible {
-		outline: 2px solid var(--color-brand);
-	}
-
-	.byline-more[data-tooltip]:hover::after,
-	.byline-more[data-tooltip]:focus-visible::after {
-		content: attr(data-tooltip);
-		position: absolute;
-		bottom: calc(100% + 6px);
-		left: 50%;
-		transform: translateX(-50%);
-		white-space: nowrap;
-		background: var(--color-text);
-		color: var(--color-bg);
-		font-size: var(--font-size-xs);
-		font-weight: 400;
-		padding: var(--spacing-1) var(--spacing-2);
-		border-radius: var(--radius);
-		pointer-events: none;
-		z-index: 10;
 	}
 </style>

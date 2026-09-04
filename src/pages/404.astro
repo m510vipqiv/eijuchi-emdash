@@ -1,12 +1,20 @@
 ---
 import Base from "../layouts/Base.astro";
+import { CATEGORIES } from "../utils/categories";
 ---
 
-<Base title="Page not found">
+<Base title="ページが見つかりません" robots="noindex, nofollow">
 	<div class="not-found">
-		<h1>404</h1>
-		<p>The page you're looking for doesn't exist.</p>
-		<a href="/">Go back home</a>
+		<p class="code" aria-hidden="true">404</p>
+		<h1>ページが見つかりません</h1>
+		<p class="lead">お探しのページは移動または削除された可能性があります。</p>
+		<div class="actions">
+			<a href="/" class="btn">トップへ戻る</a>
+			<a href="/search" class="btn btn--ghost">記事を検索</a>
+		</div>
+		<nav class="cats" aria-label="カテゴリ">
+			{CATEGORIES.map((c) => <a href={`/${c.slug}`} class:list={["cat-chip", `cat-chip--${c.slug}`]}>{c.label}</a>)}
+		</nav>
 	</div>
 </Base>
 
@@ -14,20 +22,69 @@ import Base from "../layouts/Base.astro";
 	.not-found {
 		text-align: center;
 		padding: var(--spacing-24) var(--spacing-6);
+		max-width: 560px;
+		margin: 0 auto;
 	}
 
-	.not-found h1 {
-		font-size: var(--font-size-5xl);
-		margin-bottom: var(--spacing-2);
-		color: var(--color-border);
+	.code {
+		font-size: clamp(4rem, 14vw, 7rem);
+		font-weight: 800;
+		line-height: 1;
+		letter-spacing: -0.04em;
+		background: var(--gradient-glitch-soft);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+		margin-bottom: var(--spacing-4);
 	}
 
-	.not-found p {
+	h1 {
+		font-size: var(--font-size-2xl);
+		margin-bottom: var(--spacing-3);
+	}
+
+	.lead {
 		color: var(--color-muted);
-		margin-bottom: var(--spacing-6);
+		margin-bottom: var(--spacing-8);
 	}
 
-	.not-found a {
+	.actions {
+		display: flex;
+		justify-content: center;
+		gap: var(--spacing-3);
+		margin-bottom: var(--spacing-8);
+	}
+
+	.btn {
+		display: inline-block;
+		padding: var(--spacing-3) var(--spacing-6);
+		border-radius: 999px;
+		background: var(--color-brand);
+		color: var(--color-on-brand);
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+	.btn:hover {
+		background: var(--color-brand-hover);
+		color: var(--color-on-brand);
+	}
+
+	.btn--ghost {
+		background: transparent;
 		color: var(--color-text);
+		border: 1px solid var(--color-border);
+	}
+
+	.btn--ghost:hover {
+		background: var(--color-surface);
+		color: var(--color-text);
+	}
+
+	.cats {
+		display: flex;
+		justify-content: center;
+		flex-wrap: wrap;
+		gap: var(--spacing-2);
 	}
 </style>
