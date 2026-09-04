@@ -29,6 +29,7 @@ export default defineConfig({
 			cssVariable: "--font-body",
 			weights: [400, 500, 700, 800],
 			subsets: ["latin", "japanese"],
+			optimizedFallbacks: false,
 			fallbacks: [
 				"Hiragino Sans",
 				"Hiragino Kaku Gothic ProN",
@@ -42,6 +43,7 @@ export default defineConfig({
 			name: "JetBrains Mono",
 			cssVariable: "--font-mono",
 			weights: [400, 500],
+			optimizedFallbacks: false,
 			fallbacks: ["monospace"],
 		},
 	],
