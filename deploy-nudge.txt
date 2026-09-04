@@ -1,0 +1,2 @@
+Deploy nudge — bump to reset free-plan CPU throttling during bulk operations.
+2026-09-04T17:10:02Z
