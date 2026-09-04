@@ -1,72 +1,107 @@
 ---
-import {
-	getTerm,
-	getEmDashCollection,
-	getTermsForEntries,
-	decodeSlug,
-} from "emdash";
+import { getTerm, getEmDashCollection, getTermsForEntries, decodeSlug, getSiteSettings } from "emdash";
 import Base from "../../layouts/Base.astro";
 import PostCard from "../../components/PostCard.astro";
 import { getReadingTime } from "../../utils/reading-time";
+import { resolveBlogSiteIdentity, siteOrigin } from "../../utils/site-identity";
+import { primaryCategory, categoryLabel, postHref } from "../../utils/categories";
 
 const slug = decodeSlug(Astro.params.slug);
 const term = slug ? await getTerm("tag", slug) : null;
+if (!term) return Astro.redirect("/404");
 
-if (!term) {
-	return Astro.redirect("/404");
-}
+const PER_PAGE = 24;
+const cursor = Astro.url.searchParams.get("cursor") ?? undefined;
+const origin = siteOrigin(Astro.url);
+const { siteTitle } = resolveBlogSiteIdentity(await getSiteSettings());
 
-const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
+const { entries: posts, cacheHint, nextCursor } = await getEmDashCollection("posts", {
+	status: "published",
 	where: { tag: term.slug },
 	orderBy: { published_at: "desc" },
+	limit: PER_PAGE,
+	cursor,
 });
-
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
-// Single batched query for tags on every post tagged with this term,
-// rather than calling getEntryTerms() per post.
-const tagsByEntry = await getTermsForEntries(
-	"posts",
-	posts.map((p) => p.data.id),
-	"tag",
-);
-const filteredPosts = posts.map((post) => ({
-	post,
-	tags: tagsByEntry.get(post.data.id) ?? [],
-}));
+const ids = posts.map((p) => p.data.id);
+const [catsByEntry, tagsByEntry] = await Promise.all([
+	getTermsForEntries("posts", ids, "category"),
+	getTermsForEntries("posts", ids, "tag"),
+]);
+
+const items = posts.map((post) => {
+	const cat = primaryCategory(catsByEntry.get(post.data.id));
+	return {
+		post,
+		category: { slug: cat, label: categoryLabel(cat) },
+		tags: (tagsByEntry.get(post.data.id) ?? []).map((t) => ({ slug: t.slug, label: t.label })),
+	};
+});
+
+const count = term.count ?? posts.length;
+const canonical = `${origin}/tag/${encodeURIComponent(term.slug)}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`;
+
+const breadcrumbJsonLd = {
+	"@context": "https://schema.org",
+	"@type": "BreadcrumbList",
+	itemListElement: [
+		{ "@type": "ListItem", position: 1, name: siteTitle, item: `${origin}/` },
+		{ "@type": "ListItem", position: 2, name: "タグ一覧", item: `${origin}/tags` },
+		{ "@type": "ListItem", position: 3, name: term.label, item: `${origin}/tag/${encodeURIComponent(term.slug)}` },
+	],
+};
 ---
 
 <Base
-	title={`Posts tagged "${term.label}"`}
-	description={`All posts tagged with ${term.label}`}
+	title={`「${term.label}」の記事一覧`}
+	description={`${siteTitle}の「${term.label}」タグが付いた記事一覧（${count}件）。`}
+	canonical={canonical}
+	robots={cursor ? "noindex, follow" : null}
 >
+	<script slot="head" type="application/ld+json" is:inline set:html={JSON.stringify(breadcrumbJsonLd)}></script>
 	<section class="archive-section">
 		<header class="archive-header">
-			<span class="archive-label">Tag</span>
-			<h1 class="archive-title">{term.label}</h1>
-			<p class="archive-count">
-				{filteredPosts.length}
-				{filteredPosts.length === 1 ? "post" : "posts"}
-			</p>
+			<nav class="breadcrumb" aria-label="パンくずリスト">
+				<a href="/">ホーム</a>
+				<span aria-hidden="true">/</span>
+				<a href="/tags">タグ一覧</a>
+				<span aria-hidden="true">/</span>
+				<span>{term.label}</span>
+			</nav>
+			<h1 class="archive-title"><span class="archive-hash" aria-hidden="true">#</span>{term.label}</h1>
+			<p class="archive-count">{count}件の記事</p>
 		</header>
 
 		{
-			filteredPosts.length === 0 ? (
-				<p class="no-posts">No posts with this tag yet.</p>
+			items.length === 0 ? (
+				<p class="no-posts">このタグの記事はまだありません。</p>
 			) : (
 				<div class="posts-grid">
-					{filteredPosts.map(({ post, tags }) => (
+					{items.map(({ post, category, tags }) => (
 						<PostCard
 							title={post.data.title}
 							excerpt={post.data.excerpt}
 							featuredImage={post.data.featured_image}
-							href={`/posts/${post.id}`}
+							href={postHref(category.slug, post.id)}
 							date={post.data.publishedAt ?? undefined}
 							readingTime={getReadingTime(post.data.content)}
-							tags={tags.map((t) => ({ slug: t.slug, label: t.label }))}
+							category={category}
+							tags={tags}
+							headingLevel="h2"
 						/>
 					))}
 				</div>
+			)
+		}
+
+		{
+			nextCursor && (
+				<nav class="pagination" aria-label="ページ送り">
+					<a href={`/tag/${encodeURIComponent(term.slug)}?cursor=${encodeURIComponent(nextCursor)}`} class="pagination-next" rel="next">
+						さらに読み込む →
+					</a>
+				</nav>
 			)
 		}
 	</section>
@@ -76,7 +111,24 @@ const filteredPosts = posts.map((post) => ({
 	.archive-section {
 		max-width: var(--wide-width);
 		margin: 0 auto;
-		padding: var(--spacing-12) var(--spacing-6);
+		padding: var(--spacing-10) var(--spacing-6) var(--spacing-20);
+	}
+
+	.breadcrumb {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--spacing-2);
+		font-size: var(--font-size-xs);
+		color: var(--color-muted);
+		margin-bottom: var(--spacing-4);
+	}
+
+	.breadcrumb a {
+		color: var(--color-muted);
+	}
+
+	.breadcrumb a:hover {
+		color: var(--color-brand);
 	}
 
 	.archive-header {
@@ -85,24 +137,19 @@ const filteredPosts = posts.map((post) => ({
 		border-bottom: 1px solid var(--color-border-subtle);
 	}
 
-	.archive-label {
-		display: block;
-		font-size: var(--font-size-xs);
-		font-weight: 500;
-		color: var(--color-brand);
-		text-transform: uppercase;
-		letter-spacing: var(--tracking-wider);
-		margin-bottom: var(--spacing-2);
-	}
-
 	.archive-title {
 		font-size: var(--font-size-4xl);
 		font-weight: var(--font-weight-display);
-		letter-spacing: var(--tracking-tight);
 		margin-bottom: var(--spacing-2);
 	}
 
-	.archive-count {
+	.archive-hash {
+		color: var(--color-accent);
+		margin-right: 0.15em;
+	}
+
+	.archive-count,
+	.no-posts {
 		font-size: var(--font-size-sm);
 		color: var(--color-muted);
 	}
@@ -113,8 +160,26 @@ const filteredPosts = posts.map((post) => ({
 		gap: var(--spacing-12) var(--spacing-8);
 	}
 
-	.no-posts {
-		color: var(--color-muted);
+	.pagination {
+		display: flex;
+		justify-content: center;
+		margin-top: var(--spacing-16);
+	}
+
+	.pagination-next {
+		display: inline-block;
+		padding: var(--spacing-3) var(--spacing-8);
+		border-radius: 999px;
+		border: 1px solid var(--color-border);
+		color: var(--color-text);
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+	.pagination-next:hover {
+		border-color: var(--color-brand);
+		color: var(--color-brand);
+		box-shadow: 0 0 0 3px var(--color-brand-ring);
 	}
 
 	@media (max-width: 900px) {
@@ -124,6 +189,14 @@ const filteredPosts = posts.map((post) => ({
 	}
 
 	@media (max-width: 600px) {
+		.archive-section {
+			padding: var(--spacing-6) var(--spacing-4) var(--spacing-12);
+		}
+
+		.archive-title {
+			font-size: var(--font-size-3xl);
+		}
+
 		.posts-grid {
 			grid-template-columns: 1fr;
 		}
