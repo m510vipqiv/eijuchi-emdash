@@ -30,7 +30,10 @@
 	--gradient-glitch: linear-gradient(90deg, #ff2e97 0%, #ff2e97 45%, #23d5e8 55%, #23d5e8 100%);
 	--gradient-glitch-soft: linear-gradient(90deg, #ff2e97, #23d5e8);
 
-	/* Typography: Noto Sans JP via astro.config.mjs (--font-body) */
+	/* Typography: Noto Sans JP via Google Fonts <link> (see Base.astro) */
+	--font-body:
+		"Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo",
+		system-ui, sans-serif;
 	--font-heading: var(--font-body);
 	--font-weight-heading: 700;
 	--font-weight-display: 800;
@@ -54,6 +57,24 @@
 :root.dark {
 	--shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.55);
 	--shadow-card: 0 12px 30px -10px rgba(0, 0, 0, 0.6);
+}
+
+/*
+  Explicit theme choice (footer/header toggle sets .light / .dark on <html>).
+  Astro's Lightning CSS polyfills light-dark() with the --lightningcss-*
+  variables, so set them alongside color-scheme; the @supports guard the
+  template used gets stripped by the minifier and never applied.
+*/
+:root.light {
+	color-scheme: light;
+	--lightningcss-light: initial;
+	--lightningcss-dark: ;
+}
+
+:root.dark {
+	color-scheme: dark;
+	--lightningcss-light: ;
+	--lightningcss-dark: initial;
 }
 
 /* Fallback for browsers without light-dark() */
