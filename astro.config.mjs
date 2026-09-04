@@ -22,22 +22,9 @@ export default defineConfig({
 			plugins: [formsPlugin()],
 		}),
 	],
+	// Noto Sans JP is loaded via a Google Fonts <link> in Base.astro: the Astro
+	// font pipeline would inline ~490 @font-face slices (380KB) into every page.
 	fonts: [
-		{
-			provider: fontProviders.google(),
-			name: "Noto Sans JP",
-			cssVariable: "--font-body",
-			weights: [400, 500, 700, 800],
-			subsets: ["latin", "japanese"],
-			optimizedFallbacks: false,
-			fallbacks: [
-				"Hiragino Sans",
-				"Hiragino Kaku Gothic ProN",
-				"Yu Gothic",
-				"Meiryo",
-				"sans-serif",
-			],
-		},
 		{
 			provider: fontProviders.google(),
 			name: "JetBrains Mono",
