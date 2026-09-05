@@ -98,7 +98,7 @@ const breadcrumbJsonLd = {
 	page ? (
 		<Base
 			title={page.data.title}
-			description={page.data.excerpt ?? null}
+			description={fallbackDescription(page.data.excerpt, page.data.content) || `${siteTitle}の${page.data.title}ページ。`}
 			canonical={`${origin}/${slug}/`}
 			content={{ collection: "pages", id: page.data.id, slug }}
 		>
