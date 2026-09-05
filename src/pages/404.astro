@@ -10,11 +10,11 @@ import { CATEGORIES } from "../utils/categories";
 		<p class="lead">お探しのページは移動または削除された可能性があります。URLをご確認いただくか、以下からお探しください。</p>
 		<div class="actions">
 			<a href="/" class="btn-ink">トップへ戻る</a>
-			<a href="/search" class="btn-ghost">記事を検索</a>
+			<a href="/search/" class="btn-ghost">記事を検索</a>
 		</div>
 		<nav class="cats" aria-label="カテゴリ">
 			{CATEGORIES.map((c, i) => (
-				<a href={`/${c.slug}`}>
+				<a href={`/${c.slug}/`}>
 					<span class="cat-no">{String(i + 1).padStart(2, "0")}</span>
 					{c.label}
 				</a>

@@ -42,7 +42,7 @@ const rows = posts.map((post) => {
 <Base
 	title="記事一覧"
 	description={`${siteTitle}の全記事を新着順に掲載しています。`}
-	canonical={`${origin}/articles${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`}
+	canonical={`${origin}/articles/${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`}
 	robots={cursor ? "noindex, follow" : null}
 >
 	<div class="posts-page">
@@ -64,7 +64,7 @@ const rows = posts.map((post) => {
 								{post.data.publishedAt && (
 									<time datetime={isoDate(post.data.publishedAt)}>{formatDateJa(post.data.publishedAt)}</time>
 								)}
-								<a href={`/${cat}`} class="cat-word">{categoryEn(cat)}<span class="cat-ja">{catLabel}</span></a>
+								<a href={`/${cat}/`} class="cat-word">{categoryEn(cat)}<span class="cat-ja">{catLabel}</span></a>
 								<span>{getReadingTime(post.data.content)} min</span>
 							</p>
 							<div class="post-body">
@@ -75,7 +75,7 @@ const rows = posts.map((post) => {
 								{tags.length > 0 && (
 									<p class="post-tags">
 										{tags.map((t) => (
-											<a href={`/tag/${encodeURIComponent(t.slug)}`} class="tag-pill">
+											<a href={`/tag/${encodeURIComponent(t.slug)}/`} class="tag-pill">
 												{t.label}
 											</a>
 										))}
@@ -91,7 +91,7 @@ const rows = posts.map((post) => {
 		{
 			nextCursor && (
 				<nav class="pagination" aria-label="ページ送り">
-					<a href={`/articles?cursor=${encodeURIComponent(nextCursor)}`} class="btn-ink" rel="next">
+					<a href={`/articles/?cursor=${encodeURIComponent(nextCursor)}`} class="btn-ink" rel="next">
 						次のページ →
 					</a>
 				</nav>
