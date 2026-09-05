@@ -5,6 +5,7 @@
 import { getTaxonomyTerms, getSiteSettings } from "emdash";
 import Base from "../layouts/Base.astro";
 import { resolveBlogSiteIdentity, siteOrigin } from "../utils/site-identity";
+import { tagHref } from "../utils/categories";
 
 const origin = siteOrigin(Astro.url);
 const { siteTitle } = resolveBlogSiteIdentity(await getSiteSettings());
@@ -39,7 +40,7 @@ function weight(count: number | undefined) {
 				<ul class="tag-cloud">
 					{terms.map((t) => (
 						<li>
-							<a href={`/tag/${encodeURIComponent(t.slug)}/`} class:list={["tag-item", `tag-item--${weight(t.count)}`]}>
+							<a href={tagHref(t.slug)} class:list={["tag-item", `tag-item--${weight(t.count)}`]}>
 								<span class="tag-label">{t.label}</span>
 								<span class="tag-count">{t.count}</span>
 							</a>

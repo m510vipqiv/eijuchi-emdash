@@ -6,6 +6,7 @@ import PostCard from "../components/PostCard.astro";
 import { getReadingTime } from "../utils/reading-time";
 import { resolveBlogSiteIdentity, siteOrigin } from "../utils/site-identity";
 import {
+	tagHref,
 	CATEGORIES,
 	primaryCategory,
 	categoryLabel,
@@ -108,7 +109,7 @@ const origin = siteOrigin(Astro.url);
 								{featuredTags.length > 0 && (
 									<p class="lead-tags">
 										{featuredTags.slice(0, 4).map((tag) => (
-											<a href={`/tag/${encodeURIComponent(tag.slug)}/`} class="tag-pill">
+											<a href={tagHref(tag.slug)} class="tag-pill">
 												{tag.label}
 											</a>
 										))}
@@ -202,7 +203,7 @@ const origin = siteOrigin(Astro.url);
 								<h2 class="rail-head">よく使うタグ</h2>
 								<p class="rail-tags">
 									{popularTags.map((t) => (
-										<a href={`/tag/${encodeURIComponent(t.slug)}/`} class="tag-pill">
+										<a href={tagHref(t.slug)} class="tag-pill">
 											{t.label}
 										</a>
 									))}

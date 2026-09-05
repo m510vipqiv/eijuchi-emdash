@@ -7,7 +7,7 @@ import { getEmDashCollection, getTermsForEntries, getSiteSettings } from "emdash
 import Base from "../layouts/Base.astro";
 import { getReadingTime } from "../utils/reading-time";
 import { resolveBlogSiteIdentity, siteOrigin } from "../utils/site-identity";
-import { primaryCategory, categoryLabel, categoryEn, postHref, formatDateJa, isoDate } from "../utils/categories";
+import { tagHref, primaryCategory, categoryLabel, categoryEn, postHref, formatDateJa, isoDate } from "../utils/categories";
 
 const PER_PAGE = 30;
 const cursor = Astro.url.searchParams.get("cursor") ?? undefined;
@@ -75,7 +75,7 @@ const rows = posts.map((post) => {
 								{tags.length > 0 && (
 									<p class="post-tags">
 										{tags.map((t) => (
-											<a href={`/tag/${encodeURIComponent(t.slug)}/`} class="tag-pill">
+											<a href={tagHref(t.slug)} class="tag-pill">
 												{t.label}
 											</a>
 										))}
