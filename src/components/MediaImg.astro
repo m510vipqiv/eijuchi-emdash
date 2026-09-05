@@ -1,0 +1,54 @@
+---
+/**
+ * <MediaImg> — a plain <img> for EmDash media, resized through the Cloudflare
+ * IMAGES binding at one of the fixed widths in utils/media.ts.
+ *
+ * variant="thumb": single 480px rendition (cards, list rows).
+ * variant="hero":  960px rendition with a 480px candidate for small screens.
+ */
+import type { HTMLAttributes } from "astro/types";
+import { mediaKey, mediaDims, mediaAlt, originalUrl, resizedUrl, WIDTHS, type MediaLike } from "../utils/media";
+
+interface Props extends Omit<HTMLAttributes<"img">, "src" | "width" | "height" | "alt"> {
+	image: MediaLike | string | null | undefined;
+	variant?: "thumb" | "hero";
+	alt?: string;
+	priority?: boolean;
+	/** `sizes` attribute for the hero variant */
+	sizes?: string;
+}
+
+const { image, variant = "thumb", alt, priority = false, sizes, class: className, ...attrs } = Astro.props;
+
+const key = mediaKey(image);
+if (!key) return null;
+
+const width = variant === "hero" ? WIDTHS.hero : WIDTHS.thumb;
+const dims = mediaDims(image);
+const ratio = dims ? dims.width / dims.height : 16 / 9;
+// Never upscale: if the original is narrower than the requested width, serve it as-is.
+const effectiveWidth = dims && dims.width < width ? dims.width : width;
+const src = dims && dims.width < width ? originalUrl(image)! : resizedUrl(key, width);
+const renderHeight = Math.round(effectiveWidth / ratio);
+
+const srcset =
+	variant === "hero" && !(dims && dims.width < WIDTHS.hero)
+		? `${resizedUrl(key, WIDTHS.thumb)} ${WIDTHS.thumb}w, ${resizedUrl(key, WIDTHS.hero)} ${WIDTHS.hero}w`
+		: undefined;
+const finalSizes = srcset ? (sizes ?? "(max-width: 600px) 100vw, 960px") : undefined;
+const finalAlt = alt ?? mediaAlt(image);
+---
+
+<img
+	src={src}
+	srcset={srcset}
+	sizes={finalSizes}
+	width={effectiveWidth}
+	height={renderHeight}
+	alt={finalAlt}
+	loading={priority ? "eager" : "lazy"}
+	fetchpriority={priority ? "high" : undefined}
+	decoding="async"
+	class={className}
+	{...attrs}
+/>

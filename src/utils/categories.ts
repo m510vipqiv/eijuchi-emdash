@@ -52,9 +52,24 @@ export function primaryCategory(terms: TermLike[] | undefined | null): CategoryS
 	return "news";
 }
 
-/** Build the public URL of a post: /{category}/{slug} */
+/**
+ * Public URLs keep WordPress's trailing slash so every indexed URL stays
+ * byte-identical after the migration (src/middleware.ts 301s the bare form).
+ */
 export function postHref(categorySlug: string, postSlug: string): string {
-	return `/${categorySlug}/${postSlug}`;
+	return `/${categorySlug}/${postSlug}/`;
+}
+
+export function categoryHref(categorySlug: string): string {
+	return `/${categorySlug}/`;
+}
+
+export function tagHref(tagSlug: string): string {
+	return `/tag/${encodeURIComponent(tagSlug)}/`;
+}
+
+export function pageHref(pageSlug: string): string {
+	return `/${pageSlug}/`;
 }
 
 /** Japanese date, e.g. 2024年1月5日 */

@@ -1,0 +1,93 @@
+---
+/**
+ * Portable Text `image` block override for article bodies.
+ *
+ * Replaces EmDash's default <Image> (which emitted a 10-entry srcset of the
+ * *original* file) with one 960px WebP rendition, width/height when known
+ * (CLS), lazy loading, and a caption. See utils/media.ts for the width budget.
+ */
+import { mediaKey, originalUrl, resizedUrl, WIDTHS } from "../utils/media";
+
+interface Props {
+	node: {
+		_type: "image";
+		_key: string;
+		asset?: { _ref?: string; url?: string; provider?: string; meta?: Record<string, unknown> };
+		alt?: string;
+		caption?: string;
+		width?: number;
+		height?: number;
+		displayWidth?: number;
+		displayHeight?: number;
+		alignment?: "left" | "center" | "right" | "wide" | "full";
+	};
+}
+
+const { node } = Astro.props;
+const asset = node?.asset;
+if (!asset) return null;
+
+const key = mediaKey({ url: asset.url, id: asset._ref, meta: asset.meta as never });
+const external = asset.provider && asset.provider !== "local";
+const originalW = node.width;
+const originalH = node.height;
+const ratio = originalW && originalH ? originalW / originalH : undefined;
+
+let src: string;
+let width: number | undefined;
+let height: number | undefined;
+if (!key || external) {
+	src = asset.url ?? "";
+	width = originalW;
+	height = originalH;
+} else if (originalW && originalW <= WIDTHS.hero) {
+	src = originalUrl({ url: asset.url, id: asset._ref })!;
+	width = originalW;
+	height = originalH;
+} else {
+	src = resizedUrl(key, WIDTHS.hero);
+	width = WIDTHS.hero;
+	height = ratio ? Math.round(WIDTHS.hero / ratio) : undefined;
+}
+
+const alt = node.alt ?? node.caption ?? "";
+---
+
+{
+	src && (
+		<figure class:list={["body-image", node.alignment && `body-image--${node.alignment}`]}>
+			<img src={src} width={width} height={height} alt={alt} loading="lazy" decoding="async" />
+			{node.caption && <figcaption>{node.caption}</figcaption>}
+		</figure>
+	)
+}
+
+<style>
+	.body-image {
+		margin: 2em 0;
+	}
+
+	.body-image img {
+		display: block;
+		max-width: 100%;
+		height: auto;
+		margin: 0 auto;
+		border-radius: var(--radius);
+	}
+
+	.body-image figcaption {
+		font-family: var(--font-mono);
+		font-size: 0.72rem;
+		color: var(--color-muted);
+		text-align: center;
+		margin-top: 0.6em;
+	}
+
+	.body-image--left img {
+		margin-left: 0;
+	}
+
+	.body-image--right img {
+		margin-right: 0;
+	}
+</style>

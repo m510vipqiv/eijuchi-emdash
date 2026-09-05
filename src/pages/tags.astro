@@ -23,7 +23,7 @@ function weight(count: number | undefined) {
 }
 ---
 
-<Base title="タグ一覧" description={`${siteTitle}で扱っているゲームタイトル・トピックのタグ一覧。`} canonical={`${origin}/tags`}>
+<Base title="タグ一覧" description={`${siteTitle}で扱っているゲームタイトル・トピックのタグ一覧。`} canonical={`${origin}/tags/`}>
 	<section class="tags-page">
 		<header class="page-header">
 			<p class="outline-word page-word" aria-hidden="true">Tags</p>
@@ -39,7 +39,7 @@ function weight(count: number | undefined) {
 				<ul class="tag-cloud">
 					{terms.map((t) => (
 						<li>
-							<a href={`/tag/${encodeURIComponent(t.slug)}`} class:list={["tag-item", `tag-item--${weight(t.count)}`]}>
+							<a href={`/tag/${encodeURIComponent(t.slug)}/`} class:list={["tag-item", `tag-item--${weight(t.count)}`]}>
 								<span class="tag-label">{t.label}</span>
 								<span class="tag-count">{t.count}</span>
 							</a>

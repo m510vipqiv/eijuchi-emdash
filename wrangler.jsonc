@@ -30,4 +30,6 @@
 	"triggers": {
 		"crons": ["0 */6 * * *"],
 	},
+	// Workers Cache: edge cache in front of the Worker (see astro.config.mjs).
+	"cache": { "enabled": true },
 }

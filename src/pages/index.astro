@@ -1,6 +1,6 @@
 ---
 import { getEmDashCollection, getTermsForEntries, getSiteSettings, getTaxonomyTerms } from "emdash";
-import { Image } from "emdash/ui";
+import MediaImg from "../components/MediaImg.astro";
 import Base from "../layouts/Base.astro";
 import PostCard from "../components/PostCard.astro";
 import { getReadingTime } from "../utils/reading-time";
@@ -64,24 +64,9 @@ const popularTags = tagTerms
 	.slice(0, 14);
 
 const origin = siteOrigin(Astro.url);
-const websiteJsonLd = {
-	"@context": "https://schema.org",
-	"@type": "WebSite",
-	name: siteTitle,
-	url: `${origin}/`,
-	description: siteTagline,
-	inLanguage: "ja",
-	potentialAction: {
-		"@type": "SearchAction",
-		target: { "@type": "EntryPoint", urlTemplate: `${origin}/search?q={search_term_string}` },
-		"query-input": "required name=search_term_string",
-	},
-};
 ---
 
 <Base title={siteTitle} pageTitle={siteTitle} description={siteTagline} canonical={`${origin}/`}>
-	<script slot="head" type="application/ld+json" is:inline set:html={JSON.stringify(websiteJsonLd)}></script>
-
 	{
 		posts.length === 0 ? (
 			<section class="empty-state">
@@ -95,14 +80,14 @@ const websiteJsonLd = {
 					<section class="lead" aria-label="最新の注目記事">
 						<p class="outline-word lead-word" aria-hidden="true">Latest</p>
 						<p class="kicker lead-kicker">
-							<a href={`/${featuredCat!.slug}`} class="tag-block">{categoryEn(featuredCat!.slug)}</a>
+							<a href={`/${featuredCat!.slug}/`} class="tag-block">{categoryEn(featuredCat!.slug)}</a>
 							<span class="lead-kicker-rule" aria-hidden="true" />
-							<a href={`/${featuredCat!.slug}`}>{featuredCat!.label}</a>
+							<a href={`/${featuredCat!.slug}/`}>{featuredCat!.label}</a>
 						</p>
 						<div class="lead-grid">
 							<a href={postHref(featuredCat!.slug, featuredPost.id)} class="lead-image frame-ink frame-ink--brand" aria-hidden="true" tabindex="-1">
 								{featuredPost.data.featured_image ? (
-									<Image image={featuredPost.data.featured_image} />
+									<MediaImg image={featuredPost.data.featured_image} variant="hero" alt="" priority sizes="(max-width: 900px) 100vw, 640px" />
 								) : (
 									<span class="lead-blank" />
 								)}
@@ -123,7 +108,7 @@ const websiteJsonLd = {
 								{featuredTags.length > 0 && (
 									<p class="lead-tags">
 										{featuredTags.slice(0, 4).map((tag) => (
-											<a href={`/tag/${encodeURIComponent(tag.slug)}`} class="tag-pill">
+											<a href={`/tag/${encodeURIComponent(tag.slug)}/`} class="tag-pill">
 												{tag.label}
 											</a>
 										))}
@@ -144,7 +129,7 @@ const websiteJsonLd = {
 								<header class="section-head">
 									<h2 id="latest-heading">新着記事</h2>
 									<span class="section-word" aria-hidden="true">New</span>
-									<a href="/articles" class="section-more">すべての記事 →</a>
+									<a href="/articles/" class="section-more">すべての記事 →</a>
 								</header>
 								<div class="posts-grid">
 									{cardPosts.map((post) => (
@@ -168,7 +153,7 @@ const websiteJsonLd = {
 								<header class="section-head">
 									<h2 id="more-heading">続けて読む</h2>
 									<span class="section-word" aria-hidden="true">More</span>
-									<a href="/articles" class="section-more">記事一覧 →</a>
+									<a href="/articles/" class="section-more">記事一覧 →</a>
 								</header>
 								<div class="posts-rows">
 									{rowPosts.map((post, i) => (
@@ -187,7 +172,7 @@ const websiteJsonLd = {
 									))}
 								</div>
 								<p class="rows-foot">
-									<a href="/articles" class="btn-ink">もっと読む</a>
+									<a href="/articles/" class="btn-ink">もっと読む</a>
 								</p>
 							</section>
 						)}
@@ -199,7 +184,7 @@ const websiteJsonLd = {
 							<ul class="rail-list">
 								{CATEGORIES.map((c, i) => (
 									<li>
-										<a href={`/${c.slug}`}>
+										<a href={`/${c.slug}/`}>
 											<span class="rail-no">{String(i + 1).padStart(2, "0")}</span>
 											<span class="rail-label">
 												<span class="rail-en">{c.en}</span>
@@ -217,12 +202,12 @@ const websiteJsonLd = {
 								<h2 class="rail-head">よく使うタグ</h2>
 								<p class="rail-tags">
 									{popularTags.map((t) => (
-										<a href={`/tag/${encodeURIComponent(t.slug)}`} class="tag-pill">
+										<a href={`/tag/${encodeURIComponent(t.slug)}/`} class="tag-pill">
 											{t.label}
 										</a>
 									))}
 								</p>
-								<a href="/tags" class="rail-more">タグ一覧 →</a>
+								<a href="/tags/" class="rail-more">タグ一覧 →</a>
 							</section>
 						)}
 
@@ -231,7 +216,7 @@ const websiteJsonLd = {
 							<p>{siteTagline}</p>
 							<p class="rail-links">
 								<a href="/rss.xml">RSS</a>
-								<a href="/contact">お問い合わせ</a>
+								<a href="/contact/">お問い合わせ</a>
 							</p>
 						</section>
 					</aside>
@@ -259,7 +244,7 @@ const websiteJsonLd = {
 	.lead-word {
 		position: absolute;
 		right: -0.02em;
-		top: -0.35em;
+		top: -0.1em;
 		font-size: clamp(4rem, 12vw, 9rem);
 		z-index: 0;
 	}

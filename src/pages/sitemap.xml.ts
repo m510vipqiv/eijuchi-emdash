@@ -13,10 +13,10 @@ export const GET: APIRoute = async ({ url }) => {
 	const entries: Array<{ loc: string; lastmod?: string; changefreq?: string; priority?: string }> = [];
 
 	entries.push({ loc: `${origin}/`, changefreq: "daily", priority: "1.0" });
-	entries.push({ loc: `${origin}/articles`, changefreq: "daily", priority: "0.6" });
-	entries.push({ loc: `${origin}/tags`, changefreq: "weekly", priority: "0.3" });
+	entries.push({ loc: `${origin}/articles/`, changefreq: "daily", priority: "0.6" });
+	entries.push({ loc: `${origin}/tags/`, changefreq: "weekly", priority: "0.3" });
 	for (const c of CATEGORIES) {
-		entries.push({ loc: `${origin}/${c.slug}`, changefreq: "daily", priority: "0.8" });
+		entries.push({ loc: `${origin}/${c.slug}/`, changefreq: "daily", priority: "0.8" });
 	}
 
 	// Posts — walk every page of the collection.
@@ -54,7 +54,7 @@ export const GET: APIRoute = async ({ url }) => {
 	const { entries: pages } = await getEmDashCollection("pages", { status: "published", limit: 50 });
 	for (const page of pages) {
 		entries.push({
-			loc: `${origin}/${page.id}`,
+			loc: `${origin}/${page.id}/`,
 			lastmod: page.data.updatedAt ? page.data.updatedAt.toISOString() : undefined,
 			changefreq: "yearly",
 			priority: "0.3",
@@ -65,7 +65,7 @@ export const GET: APIRoute = async ({ url }) => {
 	const tags = await getTaxonomyTerms("tag");
 	for (const t of tags) {
 		if ((t.count ?? 0) === 0) continue;
-		entries.push({ loc: `${origin}/tag/${encodeURIComponent(t.slug)}`, changefreq: "weekly", priority: "0.4" });
+		entries.push({ loc: `${origin}/tag/${encodeURIComponent(t.slug)}/`, changefreq: "weekly", priority: "0.4" });
 	}
 
 	const body = `<?xml version="1.0" encoding="UTF-8"?>

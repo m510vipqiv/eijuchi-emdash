@@ -1,4 +1,5 @@
 import cloudflare from "@astrojs/cloudflare";
+import { cacheCloudflare } from "@astrojs/cloudflare/cache";
 import react from "@astrojs/react";
 import { d1, r2 } from "@emdash-cms/cloudflare";
 import { formsPlugin } from "@emdash-cms/plugin-forms";
@@ -10,6 +11,11 @@ import emdash from "emdash/astro";
 export default defineConfig({
 	output: "server",
 	adapter: cloudflare(),
+	// Workers Cache (free on every plan): cached HTML/images are served without
+	// invoking the Worker, which is what keeps the free-plan CPU limit (error
+	// 1102) from firing under crawler / traffic bursts. Pages opt in via
+	// Astro.cache.set() in Base.astro; EmDash purges by tag on publish.
+	cache: { provider: cacheCloudflare() },
 	image: {
 		layout: "constrained",
 		responsiveStyles: true,
@@ -20,6 +26,9 @@ export default defineConfig({
 			database: d1({ binding: "DB", session: "auto" }),
 			storage: r2({ binding: "MEDIA" }),
 			plugins: [formsPlugin()],
+			// Keep public HTML identical for every visitor so the edge cache stays
+			// effective; editors get an "Edit" pill that reloads uncached.
+			toolbar: "client",
 		}),
 	],
 	// Noto Sans JP is loaded via a Google Fonts <link> in Base.astro: the Astro

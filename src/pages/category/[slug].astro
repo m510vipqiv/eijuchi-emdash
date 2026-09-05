@@ -4,6 +4,6 @@ import { decodeSlug } from "emdash";
 import { isCategorySlug } from "../../utils/categories";
 
 const slug = decodeSlug(Astro.params.slug);
-if (!slug || !isCategorySlug(slug)) return Astro.redirect("/articles", 301);
-return Astro.redirect(`/${slug}`, 301);
+if (!slug || !isCategorySlug(slug)) return Astro.redirect("/articles/", 301);
+return Astro.redirect(`/${slug}/`, 301);
 ---

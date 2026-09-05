@@ -16,6 +16,8 @@ import {
 	LOGO_WIDTH,
 	LOGO_HEIGHT,
 	siteOrigin,
+	isCanonicalHost,
+	DEFAULT_OG_IMAGE_PATH,
 } from "../utils/site-identity";
 import { CATEGORIES } from "../utils/categories";
 import "../styles/tokens.css";
@@ -72,7 +74,7 @@ const navItems = [
 		url: `/${c.slug}`,
 		target: undefined as string | undefined,
 	})),
-	{ label: "記事一覧", en: "All", url: "/articles", target: undefined as string | undefined },
+	{ label: "記事一覧", en: "All", url: "/articles/", target: undefined as string | undefined },
 	...extraItems,
 ];
 
@@ -80,6 +82,23 @@ const socialMenu = await getMenu("social");
 
 const origin = siteOrigin(Astro.url);
 const canonicalUrl = canonical ?? `${origin}${Astro.url.pathname}`;
+
+// Staging / preview hosts are never indexable; the real domain follows the
+// per-page robots directive. The header covers non-HTML consumers too.
+const onCanonicalHost = isCanonicalHost(Astro.url);
+const effectiveRobots = onCanonicalHost ? robots : "noindex, nofollow";
+if (!onCanonicalHost) Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
+
+// Every page has a share image: the page's own or the site default.
+const ogImage = image ?? `${origin}${DEFAULT_OG_IMAGE_PATH}`;
+
+// Edge cache (Cloudflare Workers Cache): anonymous HTML is identical for all
+// visitors, so let it be served without invoking the Worker. EmDash purges by
+// tag on publish; the short max-age + long SWR covers everything else.
+// Editor / preview renders are opted out by EmDash's middleware.
+if (Astro.cache?.enabled && !Astro.locals.user && !Astro.url.searchParams.has("_edit")) {
+	Astro.cache.set({ maxAge: 600, swr: 86400 });
+}
 
 // Build public page context for plugin contributions
 // SEO data is passed here and rendered securely by EmDashHead
@@ -91,9 +110,9 @@ const pageCtx = createPublicPageContext({
 	pageTitle: pageTitle ?? title,
 	description,
 	canonical: canonicalUrl,
-	image,
+	image: ogImage,
 	content,
-	seo: { ogImage: image, robots },
+	seo: { ogImage, robots: effectiveRobots },
 	articleMeta: { publishedTime, modifiedTime, author },
 	siteName: siteTitle,
 });
@@ -116,7 +135,6 @@ const currentPath = Astro.url.pathname;
 			href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Barlow+Condensed:wght@600;700;800&display=swap"
 		/>
 		<title>{fullTitle}</title>
-		<meta name="twitter:card" content="summary_large_image" />
 		<meta property="og:locale" content="ja_JP" />
 		<link rel="alternate" type="application/rss+xml" title={`${siteTitle} RSS`} href="/rss.xml" />
 		<EmDashHead page={pageCtx} />
@@ -221,7 +239,7 @@ const currentPath = Astro.url.pathname;
 							<a
 								href={item.url}
 								target={item.target}
-								aria-current={currentPath === item.url || currentPath.startsWith(item.url + "/") ? "page" : undefined}
+								aria-current={currentPath === item.url || currentPath.startsWith(item.url) ? "page" : undefined}
 							>
 								<span class="nav-index" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
 								{item.en && <span class="nav-en" aria-hidden="true">{item.en}</span>}
@@ -252,17 +270,17 @@ const currentPath = Astro.url.pathname;
 						<h2 class="footer-heading">カテゴリ</h2>
 						<ul class="footer-links">
 							{CATEGORIES.map((c) => (
-								<li><a href={`/${c.slug}`}>{c.label}</a></li>
+								<li><a href={`/${c.slug}/`}>{c.label}</a></li>
 							))}
-							<li><a href="/articles">記事一覧</a></li>
-							<li><a href="/tags">タグ一覧</a></li>
+							<li><a href="/articles/">記事一覧</a></li>
+							<li><a href="/tags/">タグ一覧</a></li>
 						</ul>
 					</div>
 					<div class="footer-nav">
 						<h2 class="footer-heading">サイト情報</h2>
 						<ul class="footer-links">
-							<li><a href="/privacy">プライバシーポリシー</a></li>
-							<li><a href="/contact">お問い合わせ</a></li>
+							<li><a href="/privacy/">プライバシーポリシー</a></li>
+							<li><a href="/contact/">お問い合わせ</a></li>
 							<li><a href="/rss.xml">RSS</a></li>
 							{
 								socialMenu?.items.map((item) => (

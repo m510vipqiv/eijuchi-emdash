@@ -3,6 +3,6 @@
 import { decodeSlug } from "emdash";
 
 const slug = decodeSlug(Astro.params.slug);
-if (!slug) return Astro.redirect("/404");
-return Astro.redirect(`/${slug}`, 301);
+if (!slug) return new Response(null, { status: 404 });
+return Astro.redirect(`/${slug}/`, 301);
 ---
