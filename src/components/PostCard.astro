@@ -1,7 +1,7 @@
 ---
 import type { MediaValue } from "emdash";
 import MediaImg from "./MediaImg.astro";
-import { formatDateJa, isoDate, categoryEn } from "../utils/categories";
+import { tagHref, formatDateJa, isoDate, categoryEn } from "../utils/categories";
 
 interface Props {
 	title: string;
@@ -61,7 +61,7 @@ const shownTags = (tags ?? []).slice(0, 3);
 				{shownTags.length > 0 && (
 					<p class="row-meta row-tags">
 						{shownTags.map((t) => (
-							<a href={`/tag/${encodeURIComponent(t.slug)}/`} class="tag-pill">
+							<a href={tagHref(t.slug)} class="tag-pill">
 								{t.label}
 							</a>
 						))}
@@ -86,7 +86,7 @@ const shownTags = (tags ?? []).slice(0, 3);
 			{shownTags.length > 0 && (
 				<p class="card-tags">
 					{shownTags.map((t) => (
-						<a href={`/tag/${encodeURIComponent(t.slug)}/`} class="tag-pill">
+						<a href={tagHref(t.slug)} class="tag-pill">
 							{t.label}
 						</a>
 					))}
