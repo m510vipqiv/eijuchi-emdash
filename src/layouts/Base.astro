@@ -135,6 +135,11 @@ const currentPath = Astro.url.pathname;
 			href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Barlow+Condensed:wght@600;700;800&display=swap"
 		/>
 		<title>{fullTitle}</title>
+		<link rel="icon" href="/favicon.ico" sizes="48x48" />
+		<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+		<link rel="manifest" href="/site.webmanifest" />
+		<meta name="theme-color" content="#1a1815" />
 		<meta property="og:locale" content="ja_JP" />
 		<link rel="alternate" type="application/rss+xml" title={`${siteTitle} RSS`} href="/rss.xml" />
 		<EmDashHead page={pageCtx} />
@@ -303,7 +308,6 @@ const currentPath = Astro.url.pathname;
 				</div>
 				<div class="footer-bottom">
 					<p class="footer-copyright">© {year} {siteTitle} — eijuchi.com</p>
-					<p class="footer-note">Powered by <a href="https://emdashcms.com" rel="noopener">EmDash</a> / Built on Cloudflare</p>
 				</div>
 			</div>
 		</footer>
@@ -864,9 +868,6 @@ const currentPath = Astro.url.pathname;
 				color: var(--color-muted);
 			}
 
-			.footer-note a {
-				color: var(--color-text-secondary);
-			}
 
 			@media (max-width: 1000px) {
 				.site-search {
