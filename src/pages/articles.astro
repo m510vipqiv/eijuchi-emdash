@@ -47,8 +47,9 @@ const rows = posts.map((post) => {
 >
 	<div class="posts-page">
 		<header class="page-header">
-			<h1 class="page-title"><span class="glitch-bar" aria-hidden="true"></span>記事一覧</h1>
-			<p class="page-description">新着順</p>
+			<p class="kicker">Index</p>
+			<h1 class="page-title">記事一覧</h1>
+			<p class="meta page-description">新着順{cursor ? "・続き" : ""}</p>
 		</header>
 
 		{
@@ -58,26 +59,28 @@ const rows = posts.map((post) => {
 				<div class="posts-list">
 					{rows.map(({ post, cat, catLabel, tags }) => (
 						<article class="post-item">
-							<a href={postHref(cat, post.id)} class="post-link">
-								<div class="post-meta">
-									<span class:list={["cat-chip", `cat-chip--${cat}`]}>{catLabel}</span>
-									{post.data.publishedAt && (
-										<time datetime={isoDate(post.data.publishedAt)}>{formatDateJa(post.data.publishedAt)}</time>
-									)}
-									<span>約{getReadingTime(post.data.content)}分</span>
-								</div>
-								<h2 class="post-title">{post.data.title}</h2>
+							<p class="meta post-meta">
+								{post.data.publishedAt && (
+									<time datetime={isoDate(post.data.publishedAt)}>{formatDateJa(post.data.publishedAt)}</time>
+								)}
+								<a href={`/${cat}`} class="cat-chip">{catLabel}</a>
+								<span>{getReadingTime(post.data.content)} min</span>
+							</p>
+							<div class="post-body">
+								<h2 class="post-title">
+									<a href={postHref(cat, post.id)}>{post.data.title}</a>
+								</h2>
 								{post.data.excerpt && <p class="post-excerpt">{post.data.excerpt}</p>}
-							</a>
-							{tags.length > 0 && (
-								<div class="post-tags">
-									{tags.map((t) => (
-										<a href={`/tag/${t.slug}`} class="tag-pill">
-											{t.label}
-										</a>
-									))}
-								</div>
-							)}
+								{tags.length > 0 && (
+									<p class="post-tags">
+										{tags.map((t) => (
+											<a href={`/tag/${encodeURIComponent(t.slug)}`} class="tag-pill">
+												{t.label}
+											</a>
+										))}
+									</p>
+								)}
+							</div>
 						</article>
 					))}
 				</div>
@@ -87,8 +90,8 @@ const rows = posts.map((post) => {
 		{
 			nextCursor && (
 				<nav class="pagination" aria-label="ページ送り">
-					<a href={`/articles?cursor=${encodeURIComponent(nextCursor)}`} class="pagination-next" rel="next">
-						さらに読み込む →
+					<a href={`/articles?cursor=${encodeURIComponent(nextCursor)}`} class="btn-ink" rel="next">
+						次のページ →
 					</a>
 				</nav>
 			)
@@ -98,25 +101,28 @@ const rows = posts.map((post) => {
 
 <style>
 	.posts-page {
-		max-width: 800px;
+		max-width: 860px;
 		margin: 0 auto;
-		padding: var(--spacing-10) var(--spacing-6) var(--spacing-20);
+		padding: var(--spacing-10) var(--spacing-6) var(--spacing-16);
 	}
 
 	.page-header {
 		margin-bottom: var(--spacing-10);
+		padding-bottom: var(--spacing-6);
+		border-bottom: 2px solid var(--color-rule-strong);
 	}
 
-	.page-title {
-		display: flex;
-		align-items: center;
-		gap: var(--spacing-3);
-		font-size: var(--font-size-3xl);
-		font-weight: var(--font-weight-display);
+	.page-header .kicker {
 		margin-bottom: var(--spacing-2);
 	}
 
-	.page-description,
+	.page-title {
+		font-size: var(--font-size-4xl);
+		font-weight: 700;
+		line-height: 1.2;
+		margin-bottom: var(--spacing-3);
+	}
+
 	.empty {
 		color: var(--color-muted);
 	}
@@ -127,45 +133,46 @@ const rows = posts.map((post) => {
 	}
 
 	.post-item {
-		padding: var(--spacing-6) 0;
+		display: grid;
+		grid-template-columns: 200px minmax(0, 1fr);
+		gap: var(--spacing-6);
+		padding: var(--spacing-5) 0;
 		border-bottom: 1px solid var(--color-border-subtle);
-	}
-
-	.post-item:first-child {
-		padding-top: 0;
-	}
-
-	.post-link {
-		display: block;
-		text-decoration: none;
-		color: inherit;
 	}
 
 	.post-meta {
 		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: var(--spacing-2) var(--spacing-3);
-		font-size: var(--font-size-xs);
-		color: var(--color-muted);
-		margin-bottom: var(--spacing-2);
+		flex-direction: column;
+		gap: var(--spacing-1);
+		padding-top: 0.35em;
+	}
+
+	.post-meta time {
+		color: var(--color-text);
 	}
 
 	.post-title {
-		font-size: var(--font-size-xl);
-		font-weight: var(--font-weight-heading);
-		line-height: var(--leading-snug);
+		font-size: var(--font-size-lg);
+		font-weight: 700;
+		line-height: 1.45;
 		margin-bottom: var(--spacing-2);
-		transition: color var(--transition-fast);
 	}
 
-	.post-link:hover .post-title {
-		color: var(--color-brand);
+	.post-title a {
+		color: var(--color-text);
+		text-decoration: none;
+	}
+
+	.post-title a:hover {
+		text-decoration: underline;
+		text-decoration-color: var(--color-brand);
+		text-decoration-thickness: 2px;
+		text-underline-offset: 4px;
 	}
 
 	.post-excerpt {
 		font-size: var(--font-size-sm);
-		line-height: var(--leading-relaxed);
+		line-height: 1.75;
 		color: var(--color-text-secondary);
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
@@ -176,43 +183,39 @@ const rows = posts.map((post) => {
 	.post-tags {
 		display: flex;
 		flex-wrap: wrap;
-		gap: var(--spacing-2);
-		margin-top: var(--spacing-3);
+		gap: 0 var(--spacing-3);
+		margin-top: var(--spacing-2);
 	}
 
 	.pagination {
 		display: flex;
-		justify-content: center;
-		margin-top: var(--spacing-12);
+		justify-content: flex-end;
+		margin-top: var(--spacing-10);
 	}
 
-	.pagination-next {
-		display: inline-block;
-		padding: var(--spacing-3) var(--spacing-8);
-		border-radius: 999px;
-		border: 1px solid var(--color-border);
-		color: var(--color-text);
-		font-weight: 600;
-		text-decoration: none;
-	}
-
-	.pagination-next:hover {
-		border-color: var(--color-brand);
-		color: var(--color-brand);
-		box-shadow: 0 0 0 3px var(--color-brand-ring);
-	}
-
-	@media (max-width: 600px) {
+	@media (max-width: 700px) {
 		.posts-page {
 			padding: var(--spacing-6) var(--spacing-4) var(--spacing-12);
 		}
 
 		.page-title {
-			font-size: var(--font-size-2xl);
+			font-size: var(--font-size-3xl);
+		}
+
+		.post-item {
+			grid-template-columns: 1fr;
+			gap: var(--spacing-2);
+		}
+
+		.post-meta {
+			flex-direction: row;
+			flex-wrap: wrap;
+			gap: 0 var(--spacing-3);
+			padding-top: 0;
 		}
 
 		.post-title {
-			font-size: var(--font-size-lg);
+			font-size: var(--font-size-base);
 		}
 	}
 </style>

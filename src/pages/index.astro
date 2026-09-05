@@ -1,5 +1,5 @@
 ---
-import { getEmDashCollection, getTermsForEntries, getSiteSettings } from "emdash";
+import { getEmDashCollection, getTermsForEntries, getSiteSettings, getTaxonomyTerms } from "emdash";
 import { Image } from "emdash/ui";
 import Base from "../layouts/Base.astro";
 import PostCard from "../components/PostCard.astro";
@@ -14,24 +14,29 @@ import {
 	isoDate,
 } from "../utils/categories";
 
-// 1 featured + 9 grid. The DB does the slicing.
-const GRID_SIZE = 9;
-const POSTS_PER_PAGE = GRID_SIZE + 1;
+// 1 lead story + 6 cards + 6 ruled rows. The DB does the slicing.
+const CARD_COUNT = 6;
+const ROW_COUNT = 6;
+const POSTS_PER_PAGE = 1 + CARD_COUNT + ROW_COUNT;
 
-const [{ entries: posts, cacheHint }, settings] = await Promise.all([
+const [{ entries: posts, cacheHint }, settings, categoryTerms, tagTerms] = await Promise.all([
 	getEmDashCollection("posts", {
 		status: "published",
 		orderBy: { published_at: "desc" },
 		limit: POSTS_PER_PAGE,
 	}),
 	getSiteSettings(),
+	getTaxonomyTerms("category"),
+	getTaxonomyTerms("tag"),
 ]);
 const { siteTitle, siteTagline } = resolveBlogSiteIdentity(settings);
 
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 const featuredPost = posts.find((p) => p.data.featured_image) ?? posts[0];
-const gridPosts = posts.filter((p) => p !== featuredPost).slice(0, GRID_SIZE);
+const rest = posts.filter((p) => p !== featuredPost);
+const cardPosts = rest.slice(0, CARD_COUNT);
+const rowPosts = rest.slice(CARD_COUNT, CARD_COUNT + ROW_COUNT);
 
 // One batched query each for categories and tags across all shown posts.
 const ids = posts.map((p) => p.data.id);
@@ -44,11 +49,18 @@ function catOf(id: string) {
 	const slug = primaryCategory(catsByEntry.get(id));
 	return { slug, label: categoryLabel(slug) };
 }
+function tagsOf(id: string) {
+	return (tagsByEntry.get(id) ?? []).map((t) => ({ slug: t.slug, label: t.label }));
+}
 
 const featuredCat = featuredPost ? catOf(featuredPost.data.id) : null;
-const featuredTags = featuredPost
-	? (tagsByEntry.get(featuredPost.data.id) ?? []).map((t) => ({ slug: t.slug, label: t.label }))
-	: [];
+const featuredTags = featuredPost ? tagsOf(featuredPost.data.id) : [];
+
+const categoryCounts = new Map(categoryTerms.map((t) => [t.slug, t.count ?? 0]));
+const popularTags = tagTerms
+	.filter((t) => (t.count ?? 0) > 0)
+	.sort((a, b) => (b.count ?? 0) - (a.count ?? 0))
+	.slice(0, 14);
 
 const origin = siteOrigin(Astro.url);
 const websiteJsonLd = {
@@ -74,88 +86,149 @@ const websiteJsonLd = {
 			<section class="empty-state">
 				<h2>記事がまだありません</h2>
 				<p>管理画面から最初の記事を作成してください。</p>
-				<a href="/_emdash/admin/content/posts/new" class="btn">記事を作成</a>
+				<a href="/_emdash/admin/content/posts/new" class="btn-ink">記事を作成</a>
 			</section>
 		) : (
 			<div class="home-content">
 				{featuredPost && (
-					<section class="featured-section" aria-label="注目記事">
-						<div class="featured-grid">
-							<a href={postHref(featuredCat!.slug, featuredPost.id)} class="featured-image-link">
-								<div class="featured-image">
-									{featuredPost.data.featured_image ? (
-										<Image image={featuredPost.data.featured_image} />
-									) : (
-										<div class="featured-placeholder">永住地</div>
-									)}
-								</div>
+					<section class="lead" aria-label="最新の注目記事">
+						<p class="kicker lead-kicker">
+							<span>Latest</span>
+							<span class="lead-kicker-rule" aria-hidden="true" />
+							<a href={`/${featuredCat!.slug}`}>{featuredCat!.label}</a>
+						</p>
+						<div class="lead-grid">
+							<a href={postHref(featuredCat!.slug, featuredPost.id)} class="lead-image" aria-hidden="true" tabindex="-1">
+								{featuredPost.data.featured_image ? (
+									<Image image={featuredPost.data.featured_image} />
+								) : (
+									<span class="lead-blank" />
+								)}
 							</a>
-							<div class="featured-content">
-								<div class="featured-meta">
-									<a href={`/${featuredCat!.slug}`} class:list={["cat-chip", `cat-chip--${featuredCat!.slug}`]}>
-										{featuredCat!.label}
-									</a>
+							<div class="lead-body">
+								<h1 class="lead-title">
+									<a href={postHref(featuredCat!.slug, featuredPost.id)}>{featuredPost.data.title}</a>
+								</h1>
+								{featuredPost.data.excerpt && <p class="lead-excerpt">{featuredPost.data.excerpt}</p>}
+								<p class="meta lead-meta">
 									{featuredPost.data.publishedAt && (
 										<time datetime={isoDate(featuredPost.data.publishedAt)}>
 											{formatDateJa(featuredPost.data.publishedAt)}
 										</time>
 									)}
-									<span>約{getReadingTime(featuredPost.data.content)}分</span>
-								</div>
-								<a href={postHref(featuredCat!.slug, featuredPost.id)} class="featured-title-link">
-									<h1 class="featured-title">{featuredPost.data.title}</h1>
-								</a>
-								{featuredPost.data.excerpt && (
-									<p class="featured-excerpt">{featuredPost.data.excerpt}</p>
-								)}
+									<span>{getReadingTime(featuredPost.data.content)} min read</span>
+								</p>
 								{featuredTags.length > 0 && (
-									<div class="featured-tags">
+									<p class="lead-tags">
 										{featuredTags.slice(0, 4).map((tag) => (
-											<a href={`/tag/${tag.slug}`} class="tag-pill">
+											<a href={`/tag/${encodeURIComponent(tag.slug)}`} class="tag-pill">
 												{tag.label}
 											</a>
 										))}
-									</div>
+									</p>
 								)}
+								<a href={postHref(featuredCat!.slug, featuredPost.id)} class="btn-ink lead-cta">
+									記事を読む
+								</a>
 							</div>
 						</div>
 					</section>
 				)}
 
-				<nav class="category-strip" aria-label="カテゴリ">
-					{CATEGORIES.map((c) => (
-						<a href={`/${c.slug}`} class:list={["category-tile", `category-tile--${c.slug}`]}>
-							<span class="category-tile-label">{c.label}</span>
-							<span class="category-tile-arrow" aria-hidden="true">→</span>
-						</a>
-					))}
-				</nav>
+				<div class="home-columns">
+					<div class="home-main">
+						{cardPosts.length > 0 && (
+							<section class="posts-section" aria-labelledby="latest-heading">
+								<header class="section-head">
+									<h2 id="latest-heading">新着記事</h2>
+									<a href="/articles" class="section-more">すべての記事 →</a>
+								</header>
+								<div class="posts-grid">
+									{cardPosts.map((post) => (
+										<PostCard
+											title={post.data.title ?? "無題"}
+											excerpt={post.data.excerpt}
+											featuredImage={post.data.featured_image}
+											href={postHref(catOf(post.data.id).slug, post.id)}
+											date={post.data.publishedAt ?? undefined}
+											readingTime={getReadingTime(post.data.content)}
+											category={catOf(post.data.id)}
+											tags={tagsOf(post.data.id)}
+										/>
+									))}
+								</div>
+							</section>
+						)}
 
-				{gridPosts.length > 0 && (
-					<section class="posts-section">
-						<header class="section-header">
-							<h2 class="section-title"><span class="glitch-bar" aria-hidden="true"></span>最新記事</h2>
-							<a href="/articles" class="section-link">すべての記事 →</a>
-						</header>
-						<div class="posts-grid">
-							{gridPosts.map((post) => {
-								const cat = catOf(post.data.id);
-								return (
-									<PostCard
-										title={post.data.title ?? "無題"}
-										excerpt={post.data.excerpt}
-										featuredImage={post.data.featured_image}
-										href={postHref(cat.slug, post.id)}
-										date={post.data.publishedAt ?? undefined}
-										readingTime={getReadingTime(post.data.content)}
-										category={cat}
-										tags={(tagsByEntry.get(post.data.id) ?? []).map((t) => ({ slug: t.slug, label: t.label }))}
-									/>
-								);
-							})}
-						</div>
-					</section>
-				)}
+						{rowPosts.length > 0 && (
+							<section class="posts-section" aria-labelledby="more-heading">
+								<header class="section-head">
+									<h2 id="more-heading">続けて読む</h2>
+									<a href="/articles" class="section-more">記事一覧 →</a>
+								</header>
+								<div class="posts-rows">
+									{rowPosts.map((post, i) => (
+										<PostCard
+											variant="row"
+											index={CARD_COUNT + i + 2}
+											title={post.data.title ?? "無題"}
+											excerpt={post.data.excerpt}
+											featuredImage={post.data.featured_image}
+											href={postHref(catOf(post.data.id).slug, post.id)}
+											date={post.data.publishedAt ?? undefined}
+											readingTime={getReadingTime(post.data.content)}
+											category={catOf(post.data.id)}
+											tags={tagsOf(post.data.id)}
+										/>
+									))}
+								</div>
+								<p class="rows-foot">
+									<a href="/articles" class="btn-ink">もっと読む</a>
+								</p>
+							</section>
+						)}
+					</div>
+
+					<aside class="home-rail" aria-label="サイド情報">
+						<section class="rail-block">
+							<h2 class="rail-head">カテゴリ</h2>
+							<ul class="rail-list">
+								{CATEGORIES.map((c, i) => (
+									<li>
+										<a href={`/${c.slug}`}>
+											<span class="rail-no">{String(i + 1).padStart(2, "0")}</span>
+											<span class="rail-label">{c.label}</span>
+											<span class="rail-count">{categoryCounts.get(c.slug) ?? 0}</span>
+										</a>
+									</li>
+								))}
+							</ul>
+						</section>
+
+						{popularTags.length > 0 && (
+							<section class="rail-block">
+								<h2 class="rail-head">よく使うタグ</h2>
+								<p class="rail-tags">
+									{popularTags.map((t) => (
+										<a href={`/tag/${encodeURIComponent(t.slug)}`} class="tag-pill">
+											{t.label}
+										</a>
+									))}
+								</p>
+								<a href="/tags" class="rail-more">タグ一覧 →</a>
+							</section>
+						)}
+
+						<section class="rail-block rail-about">
+							<h2 class="rail-head">このサイトについて</h2>
+							<p>{siteTagline}</p>
+							<p class="rail-links">
+								<a href="/rss.xml">RSS</a>
+								<a href="/contact">お問い合わせ</a>
+							</p>
+						</section>
+					</aside>
+				</div>
 			</div>
 		)
 	}
@@ -165,100 +238,95 @@ const websiteJsonLd = {
 	.home-content {
 		max-width: var(--wide-width);
 		margin: 0 auto;
-		padding: var(--spacing-12) var(--spacing-6) var(--spacing-20);
+		padding: var(--spacing-10) var(--spacing-6) var(--spacing-16);
 	}
 
-	/* Featured */
-	.featured-section {
+	/* ---- Lead story ---------------------------------------------- */
+	.lead {
+		padding-bottom: var(--spacing-12);
 		margin-bottom: var(--spacing-12);
+		border-bottom: 1px solid var(--color-rule-strong);
 	}
 
-	.featured-grid {
+	.lead-kicker {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-3);
+		margin-bottom: var(--spacing-5);
+	}
+
+	.lead-kicker a {
+		color: var(--color-text);
+		text-decoration: none;
+		text-transform: none;
+		letter-spacing: 0.04em;
+	}
+
+	.lead-kicker a:hover {
+		color: var(--color-brand);
+	}
+
+	.lead-kicker-rule {
+		width: 28px;
+		height: 1px;
+		background: var(--color-rule-strong);
+	}
+
+	.lead-grid {
 		display: grid;
 		grid-template-columns: 7fr 5fr;
 		gap: var(--spacing-10);
-		align-items: center;
+		align-items: start;
 	}
 
-	.featured-image-link {
+	.lead-image {
 		display: block;
-	}
-
-	.featured-image {
-		position: relative;
 		overflow: hidden;
-		border-radius: var(--radius-lg);
+		border-radius: var(--radius);
 		background: var(--color-surface);
-		border: 1px solid var(--color-border-subtle);
-		box-shadow: var(--shadow-card);
-	}
-
-	.featured-image::after {
-		content: "";
-		position: absolute;
-		inset: auto 0 0 0;
-		height: 4px;
-		background: var(--gradient-glitch);
-	}
-
-	.featured-image img,
-	.featured-placeholder {
-		width: 100%;
-		height: auto;
 		aspect-ratio: 16 / 9;
+	}
+
+	.lead-image :global(img),
+	.lead-blank {
+		display: block;
+		width: 100%;
+		height: 100%;
 		object-fit: cover;
-		transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
 	}
 
-	.featured-placeholder {
-		display: grid;
-		place-items: center;
-		font-weight: 800;
-		font-size: var(--font-size-4xl);
-		letter-spacing: 0.2em;
-		color: var(--color-muted);
+	.lead-blank {
+		background: repeating-linear-gradient(-45deg, transparent 0 6px, var(--color-border-subtle) 6px 7px);
 	}
 
-	.featured-image-link:hover .featured-image img,
-	.featured-grid:has(.featured-title-link:hover) .featured-image img {
-		transform: scale(1.03);
-	}
-
-	.featured-content {
+	.lead-body {
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-4);
 	}
 
-	.featured-meta {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: var(--spacing-2) var(--spacing-3);
-		font-size: var(--font-size-sm);
-		color: var(--color-muted);
+	.lead-title {
+		font-size: clamp(var(--font-size-2xl), 2.8vw, 2.25rem);
+		font-weight: 700;
+		line-height: 1.3;
+		letter-spacing: 0;
 	}
 
-	.featured-title-link {
+	.lead-title a {
+		color: var(--color-text);
 		text-decoration: none;
-		color: inherit;
 	}
 
-	.featured-title {
-		font-size: clamp(var(--font-size-2xl), 3.2vw, var(--font-size-4xl));
-		font-weight: var(--font-weight-display);
-		line-height: 1.25;
-		transition: color var(--transition-fast);
+	.lead-title a:hover {
+		text-decoration: underline;
+		text-decoration-color: var(--color-brand);
+		text-decoration-thickness: 2px;
+		text-underline-offset: 5px;
 	}
 
-	.featured-title-link:hover .featured-title,
-	.featured-grid:has(.featured-image-link:hover) .featured-title {
-		color: var(--color-brand);
-	}
-
-	.featured-excerpt {
+	.lead-excerpt {
 		font-size: var(--font-size-base);
-		line-height: var(--leading-relaxed);
+		line-height: 1.85;
 		color: var(--color-text-secondary);
 		display: -webkit-box;
 		-webkit-line-clamp: 4;
@@ -266,115 +334,136 @@ const websiteJsonLd = {
 		overflow: hidden;
 	}
 
-	.featured-tags {
+	.lead-meta {
+		display: flex;
+		gap: var(--spacing-3);
+	}
+
+	.lead-tags {
 		display: flex;
 		flex-wrap: wrap;
-		gap: var(--spacing-2);
+		gap: 0 var(--spacing-3);
 	}
 
-	/* Category strip */
-	.category-strip {
+	.lead-cta {
+		align-self: flex-start;
+		margin-top: var(--spacing-2);
+	}
+
+	/* ---- Columns --------------------------------------------------- */
+	.home-columns {
 		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: var(--spacing-4);
-		margin-bottom: var(--spacing-16);
+		grid-template-columns: minmax(0, 1fr) 260px;
+		gap: var(--spacing-16);
+		align-items: start;
 	}
 
-	.category-tile {
-		--cat-color: var(--color-brand);
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: var(--spacing-4) var(--spacing-5);
-		border-radius: var(--radius-lg);
-		border: 1px solid var(--color-border);
-		background: var(--color-bg);
-		color: var(--color-text);
-		text-decoration: none;
-		font-weight: 700;
-		position: relative;
-		overflow: hidden;
-		transition:
-			transform var(--transition-base),
-			box-shadow var(--transition-base),
-			border-color var(--transition-base);
-	}
-
-	.category-tile::before {
-		content: "";
-		position: absolute;
-		left: 0;
-		top: 0;
-		bottom: 0;
-		width: 4px;
-		background: var(--cat-color);
-	}
-
-	.category-tile:hover {
-		transform: translateY(-2px);
-		box-shadow: var(--shadow-card);
-		border-color: color-mix(in srgb, var(--cat-color) 45%, var(--color-border));
-		color: var(--color-text);
-	}
-
-	.category-tile-arrow {
-		color: var(--cat-color);
-		transition: transform var(--transition-fast);
-	}
-
-	.category-tile:hover .category-tile-arrow {
-		transform: translateX(4px);
-	}
-
-	.category-tile--news {
-		--cat-color: light-dark(#d4127c, #ff4fa8);
-	}
-	.category-tile--guide {
-		--cat-color: light-dark(#0b9fb5, #3ae0f2);
-	}
-	.category-tile--column {
-		--cat-color: light-dark(#6d4fd6, #a48cff);
-	}
-	.category-tile--review {
-		--cat-color: light-dark(#e0801a, #ffb35c);
-	}
-
-	/* Section header */
-	.section-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
-		margin-bottom: var(--spacing-8);
-		padding-bottom: var(--spacing-4);
-		border-bottom: 1px solid var(--color-border-subtle);
-	}
-
-	.section-title {
-		display: flex;
-		align-items: center;
-		gap: var(--spacing-3);
-		font-size: var(--font-size-xl);
-		font-weight: 800;
-	}
-
-	.section-link {
-		font-size: var(--font-size-sm);
-		font-weight: 600;
-		color: var(--color-brand);
-		text-decoration: none;
-	}
-
-	.section-link:hover {
-		color: var(--color-brand-hover);
+	.posts-section + .posts-section {
+		margin-top: var(--spacing-14, 3.5rem);
 	}
 
 	.posts-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: var(--spacing-12) var(--spacing-8);
+		gap: var(--spacing-10) var(--spacing-6);
 	}
 
-	/* Empty state */
+	.rows-foot {
+		margin-top: var(--spacing-8);
+		padding-top: var(--spacing-6);
+		border-top: 1px solid var(--color-border-subtle);
+	}
+
+	/* ---- Rail ------------------------------------------------------ */
+	.home-rail {
+		position: sticky;
+		top: var(--spacing-6);
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-10);
+	}
+
+	.rail-head {
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		font-weight: 500;
+		letter-spacing: var(--tracking-wider);
+		text-transform: uppercase;
+		color: var(--color-muted);
+		padding-bottom: var(--spacing-2);
+		margin-bottom: var(--spacing-3);
+		border-bottom: 2px solid var(--color-rule-strong);
+	}
+
+	.rail-list {
+		list-style: none;
+	}
+
+	.rail-list a {
+		display: grid;
+		grid-template-columns: 2.2em 1fr auto;
+		align-items: baseline;
+		padding: var(--spacing-3) 0;
+		border-bottom: 1px solid var(--color-border-subtle);
+		color: var(--color-text);
+		text-decoration: none;
+		font-weight: 700;
+		font-size: var(--font-size-sm);
+	}
+
+	.rail-list a:hover .rail-label {
+		text-decoration: underline;
+		text-decoration-color: var(--color-brand);
+		text-underline-offset: 3px;
+	}
+
+	.rail-no,
+	.rail-count {
+		font-family: var(--font-mono);
+		font-size: 0.72rem;
+		font-weight: 400;
+		color: var(--color-muted);
+		letter-spacing: 0.04em;
+	}
+
+	.rail-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--spacing-1) var(--spacing-3);
+		line-height: 1.9;
+	}
+
+	.rail-more {
+		display: inline-block;
+		margin-top: var(--spacing-3);
+		font-family: var(--font-mono);
+		font-size: 0.72rem;
+		color: var(--color-muted);
+		text-decoration: none;
+	}
+
+	.rail-more:hover {
+		color: var(--color-brand);
+	}
+
+	.rail-about p {
+		font-size: var(--font-size-sm);
+		line-height: 1.8;
+		color: var(--color-text-secondary);
+	}
+
+	.rail-links {
+		display: flex;
+		gap: var(--spacing-4);
+		margin-top: var(--spacing-3);
+	}
+
+	.rail-links a {
+		font-family: var(--font-mono);
+		font-size: 0.72rem;
+	}
+
+	/* ---- Empty state ------------------------------------------------ */
 	.empty-state {
 		display: flex;
 		flex-direction: column;
@@ -390,21 +479,22 @@ const websiteJsonLd = {
 		color: var(--color-muted);
 	}
 
-	.btn {
-		display: inline-block;
-		margin-top: var(--spacing-4);
-		padding: var(--spacing-3) var(--spacing-6);
-		background: var(--color-brand);
-		color: var(--color-on-brand);
-		text-decoration: none;
-		border-radius: 999px;
-		font-size: var(--font-size-sm);
-		font-weight: 600;
-	}
+	@media (max-width: 1000px) {
+		.home-columns {
+			grid-template-columns: 1fr;
+			gap: var(--spacing-12);
+		}
 
-	.btn:hover {
-		background: var(--color-brand-hover);
-		color: var(--color-on-brand);
+		.home-rail {
+			position: static;
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: var(--spacing-8);
+		}
+
+		.rail-about {
+			grid-column: 1 / -1;
+		}
 	}
 
 	@media (max-width: 900px) {
@@ -412,38 +502,29 @@ const websiteJsonLd = {
 			padding: var(--spacing-6) var(--spacing-4) var(--spacing-12);
 		}
 
-		.featured-grid {
+		.lead-grid {
 			grid-template-columns: 1fr;
-			gap: var(--spacing-6);
-		}
-
-		.category-strip {
-			grid-template-columns: repeat(2, 1fr);
+			gap: var(--spacing-5);
 		}
 
 		.posts-grid {
 			grid-template-columns: repeat(2, 1fr);
-			gap: var(--spacing-8) var(--spacing-6);
+			gap: var(--spacing-8) var(--spacing-5);
 		}
 	}
 
 	@media (max-width: 600px) {
-		.featured-title {
+		.lead-title {
 			font-size: var(--font-size-2xl);
-		}
-
-		.category-strip {
-			gap: var(--spacing-3);
-		}
-
-		.category-tile {
-			padding: var(--spacing-3) var(--spacing-4);
-			font-size: var(--font-size-sm);
 		}
 
 		.posts-grid {
 			grid-template-columns: 1fr;
 			gap: var(--spacing-8);
+		}
+
+		.home-rail {
+			grid-template-columns: 1fr;
 		}
 	}
 </style>
