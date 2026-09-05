@@ -14,6 +14,8 @@ import {
 	getSiteSettings,
 } from "emdash";
 import { PortableText } from "emdash/ui";
+import ContentImage from "../../components/ContentImage.astro";
+import { fallbackDescription } from "../../utils/description";
 import { Form as ContactForm } from "@emdash-cms/plugin-forms/ui";
 import "@emdash-cms/plugin-forms/styles";
 import Base from "../../layouts/Base.astro";
@@ -23,7 +25,7 @@ import { resolveBlogSiteIdentity, siteOrigin } from "../../utils/site-identity";
 import { isCategorySlug, categoryLabel, categoryEn, postHref } from "../../utils/categories";
 
 const slug = decodeSlug(Astro.params.category);
-if (!slug) return Astro.redirect("/404");
+if (!slug) return new Response(null, { status: 404 });
 
 const origin = siteOrigin(Astro.url);
 const { siteTitle } = resolveBlogSiteIdentity(await getSiteSettings());
@@ -35,7 +37,7 @@ const cursor = Astro.url.searchParams.get("cursor") ?? undefined;
 let page: any = null;
 if (!isCategorySlug(slug)) {
 	const { entry, cacheHint } = await getEmDashEntry("pages", slug);
-	if (!entry) return Astro.redirect("/404");
+	if (!entry) return new Response(null, { status: 404 });
 	if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 	page = entry;
 }
@@ -50,7 +52,7 @@ let nextCursor: string | undefined;
 
 if (!page) {
 	term = await getTerm("category", slug);
-	if (!term) return Astro.redirect("/404");
+	if (!term) return new Response(null, { status: 404 });
 
 	const result = await getEmDashCollection("posts", {
 		status: "published",
@@ -75,7 +77,7 @@ if (!page) {
 
 const label = term ? term.label : categoryLabel(slug);
 const count = term?.count ?? items.length;
-const archiveCanonical = `${origin}/${slug}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`;
+const archiveCanonical = `${origin}/${slug}/${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`;
 
 const breadcrumbJsonLd = {
 	"@context": "https://schema.org",
@@ -86,7 +88,7 @@ const breadcrumbJsonLd = {
 			"@type": "ListItem",
 			position: 2,
 			name: page ? page.data.title : label,
-			item: `${origin}/${slug}`,
+			item: `${origin}/${slug}/`,
 		},
 	],
 };
@@ -97,7 +99,7 @@ const breadcrumbJsonLd = {
 		<Base
 			title={page.data.title}
 			description={page.data.excerpt ?? null}
-			canonical={`${origin}/${slug}`}
+			canonical={`${origin}/${slug}/`}
 			content={{ collection: "pages", id: page.data.id, slug }}
 		>
 			<script slot="head" type="application/ld+json" is:inline set:html={JSON.stringify(breadcrumbJsonLd)}></script>
@@ -174,7 +176,7 @@ const breadcrumbJsonLd = {
 
 				{nextCursor && (
 					<nav class="pagination" aria-label="ページ送り">
-						<a href={`/${slug}?cursor=${encodeURIComponent(nextCursor)}`} class="btn-ink" rel="next">
+						<a href={`/${slug}/?cursor=${encodeURIComponent(nextCursor)}`} class="btn-ink" rel="next">
 							次のページ →
 						</a>
 					</nav>

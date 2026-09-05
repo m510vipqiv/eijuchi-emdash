@@ -11,12 +11,16 @@ import {
 	decodeSlug,
 	getSiteSettings,
 } from "emdash";
-import { Image, PortableText, WidgetArea } from "emdash/ui";
+import { PortableText } from "emdash/ui";
+import MediaImg from "../../components/MediaImg.astro";
+import ContentImage from "../../components/ContentImage.astro";
+import { fallbackDescription } from "../../utils/description";
 import Base from "../../layouts/Base.astro";
 import PostCard from "../../components/PostCard.astro";
 import { getReadingTime } from "../../utils/reading-time";
-import { resolveBlogSiteIdentity, siteOrigin, LOGO_LIGHT_URL } from "../../utils/site-identity";
+import { resolveBlogSiteIdentity, siteOrigin } from "../../utils/site-identity";
 import {
+	CATEGORIES,
 	isCategorySlug,
 	categoryLabel,
 	categoryEn,
@@ -31,11 +35,11 @@ const category = decodeSlug(Astro.params.category);
 const slug = decodeSlug(Astro.params.slug);
 
 if (!category || !slug || !isCategorySlug(category)) {
-	return Astro.redirect("/404");
+	return new Response(null, { status: 404 });
 }
 
 const { entry: post, cacheHint } = await getEmDashEntry("posts", slug);
-if (!post) return Astro.redirect("/404");
+if (!post) return new Response(null, { status: 404 });
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 // Verify the URL category belongs to this post; otherwise 301 to its canonical category.
@@ -101,35 +105,14 @@ const relatedTags = await getTermsForEntries(
 );
 
 const catLabel = categoryLabel(category);
-const description = seo.description ?? post.data.excerpt ?? "";
-
-const articleJsonLd = {
-	"@context": "https://schema.org",
-	"@type": "Article",
-	mainEntityOfPage: { "@type": "WebPage", "@id": `${origin}${path}` },
-	headline: post.data.title,
-	description,
-	image: featuredImageUrl ? [featuredImageUrl] : undefined,
-	datePublished: isoDate(post.data.publishedAt),
-	dateModified: isoDate(modifiedAt) ?? isoDate(post.data.publishedAt),
-	inLanguage: "ja",
-	articleSection: catLabel,
-	keywords: tags.map((t) => t.label).join(", ") || undefined,
-	author: { "@type": "Person", name: authorName, url: `${origin}/` },
-	publisher: {
-		"@type": "Organization",
-		name: siteTitle,
-		url: `${origin}/`,
-		logo: { "@type": "ImageObject", url: `${origin}${LOGO_LIGHT_URL}` },
-	},
-};
+const description = fallbackDescription(seo.description ?? post.data.excerpt, post.data.content);
 
 const breadcrumbJsonLd = {
 	"@context": "https://schema.org",
 	"@type": "BreadcrumbList",
 	itemListElement: [
 		{ "@type": "ListItem", position: 1, name: siteTitle, item: `${origin}/` },
-		{ "@type": "ListItem", position: 2, name: catLabel, item: `${origin}/${category}` },
+		{ "@type": "ListItem", position: 2, name: catLabel, item: `${origin}/${category}/` },
 		{ "@type": "ListItem", position: 3, name: post.data.title, item: `${origin}${path}` },
 	],
 };
@@ -148,7 +131,6 @@ const breadcrumbJsonLd = {
 	author={authorName}
 	content={{ collection: "posts", id: post.data.id, slug }}
 >
-	<script slot="head" type="application/ld+json" is:inline set:html={JSON.stringify(articleJsonLd)}></script>
 	<script slot="head" type="application/ld+json" is:inline set:html={JSON.stringify(breadcrumbJsonLd)}></script>
 
 	<article class="article">
@@ -157,11 +139,11 @@ const breadcrumbJsonLd = {
 				<nav class="breadcrumb" aria-label="パンくずリスト">
 					<a href="/">ホーム</a>
 					<span aria-hidden="true">/</span>
-					<a href={`/${category}`}>{catLabel}</a>
+					<a href={`/${category}/`}>{catLabel}</a>
 				</nav>
 				<p class="kicker article-kicker">
-					<a href={`/${category}`} class="tag-block">{categoryEn(category)}</a>
-					<a href={`/${category}`} class="article-kicker-ja">{catLabel}</a>
+					<a href={`/${category}/`} class="tag-block">{categoryEn(category)}</a>
+					<a href={`/${category}/`} class="article-kicker-ja">{catLabel}</a>
 				</p>
 				<h1 class="article-title" {...post.edit.title}>{post.data.title}</h1>
 				{post.data.excerpt && <p class="article-excerpt" {...post.edit.excerpt}>{post.data.excerpt}</p>}
@@ -181,7 +163,7 @@ const breadcrumbJsonLd = {
 			{
 				post.data.featured_image && (
 					<div class="article-hero frame-ink" {...post.edit.featured_image}>
-						<Image image={post.data.featured_image} />
+						<MediaImg image={post.data.featured_image} variant="hero" alt={post.data.title} priority sizes="(max-width: 1040px) 100vw, 1000px" />
 					</div>
 				)
 			}
@@ -189,7 +171,7 @@ const breadcrumbJsonLd = {
 			<div class="article-grid">
 				<div class="article-main">
 					<div class="article-content">
-						<PortableText value={post.data.content} />
+						<PortableText value={post.data.content} components={{ type: { image: ContentImage } }} />
 					</div>
 
 					<footer class="article-footer">
@@ -197,7 +179,7 @@ const breadcrumbJsonLd = {
 							tags.length > 0 && (
 								<div class="article-tags">
 									{tags.map((t) => (
-										<a href={`/tag/${t.slug}`} class="tag-pill">
+										<a href={`/tag/${encodeURIComponent(t.slug)}/`} class="tag-pill">
 											{t.label}
 										</a>
 									))}
@@ -269,9 +251,33 @@ const breadcrumbJsonLd = {
 							<h2 class="toc-title">Contents</h2>
 							<div class="toc-content" id="toc-content"></div>
 						</nav>
-						<div class="sidebar-widgets">
-							<WidgetArea name="sidebar" />
-						</div>
+						<nav class="side-block" aria-label="カテゴリ">
+							<h2 class="side-head">Categories</h2>
+							<ul class="side-list">
+								{CATEGORIES.map((c) => (
+									<li>
+										<a href={`/${c.slug}/`} aria-current={c.slug === category ? "page" : undefined}>
+											<span class="side-en">{c.en}</span>
+											<span class="side-ja">{c.label}</span>
+										</a>
+									</li>
+								))}
+							</ul>
+						</nav>
+						{
+							tags.length > 0 && (
+								<nav class="side-block" aria-label="この記事のタグ">
+									<h2 class="side-head">Tags</h2>
+									<p class="side-tags">
+										{tags.map((t) => (
+											<a href={`/tag/${encodeURIComponent(t.slug)}/`} class="tag-pill">
+												{t.label}
+											</a>
+										))}
+									</p>
+								</nav>
+							)
+						}
 					</div>
 				</aside>
 			</div>
@@ -284,7 +290,7 @@ const breadcrumbJsonLd = {
 				<div class="more-inner">
 					<header class="section-head">
 						<h2>{catLabel}の新着記事</h2>
-						<a href={`/${category}`} class="section-more">{catLabel}をもっと →</a>
+						<a href={`/${category}/`} class="section-more">{catLabel}をもっと →</a>
 					</header>
 					<div class="more-grid">
 						{relatedPosts.map((p) => (
@@ -720,8 +726,7 @@ const breadcrumbJsonLd = {
 		overflow-y: auto;
 	}
 
-	.toc-title,
-	.sidebar-widgets :global(.widget__title) {
+	.toc-title {
 		font-family: var(--font-mono);
 		font-size: 0.7rem;
 		font-weight: 500;
@@ -771,37 +776,59 @@ const breadcrumbJsonLd = {
 		text-underline-offset: 3px;
 	}
 
-	.sidebar-widgets :global(.widget-area) {
-		display: flex;
-		flex-direction: column;
-		gap: var(--spacing-6);
+	.side-block {
+		margin-bottom: var(--spacing-8);
 	}
 
-	.sidebar-widgets :global(.widget) {
-		font-size: var(--font-size-sm);
+	.side-head {
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		font-weight: 500;
+		letter-spacing: var(--tracking-wider);
+		text-transform: uppercase;
+		color: var(--color-muted);
+		padding-bottom: var(--spacing-2);
+		margin-bottom: var(--spacing-3);
+		border-bottom: 2px solid var(--color-rule-strong);
 	}
 
-	.sidebar-widgets :global(.widget__content) {
-		color: var(--color-text-secondary);
-	}
-
-	.sidebar-widgets :global(ul) {
+	.side-list {
 		list-style: none;
-		padding: 0;
 	}
 
-	.sidebar-widgets :global(li) {
+	.side-list a {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5em;
 		padding: var(--spacing-2) 0;
 		border-bottom: 1px solid var(--color-border-subtle);
-	}
-
-	.sidebar-widgets :global(a) {
 		color: var(--color-text);
 		text-decoration: none;
 	}
 
-	.sidebar-widgets :global(a:hover) {
+	.side-en {
+		font-family: var(--font-display);
+		font-weight: 800;
+		font-size: 1.2rem;
+		line-height: 1;
+		text-transform: uppercase;
+	}
+
+	.side-ja {
+		font-size: 0.72rem;
+		color: var(--color-muted);
+	}
+
+	.side-list a:hover .side-en,
+	.side-list a[aria-current="page"] .side-en {
 		color: var(--color-brand);
+	}
+
+	.side-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--spacing-1) var(--spacing-3);
+		line-height: 1.9;
 	}
 
 	/* Related */
