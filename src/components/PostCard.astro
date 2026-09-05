@@ -1,6 +1,6 @@
 ---
 import type { MediaValue } from "emdash";
-import { Image } from "emdash/ui";
+import MediaImg from "./MediaImg.astro";
 import { formatDateJa, isoDate, categoryEn } from "../utils/categories";
 
 interface Props {
@@ -45,12 +45,12 @@ const shownTags = (tags ?? []).slice(0, 3);
 	variant === "row" ? (
 		<article class="row-item">
 			<a href={href} class="row-thumb" aria-hidden="true" tabindex="-1">
-				{featuredImage ? <Image image={featuredImage} /> : <span class="thumb-blank" />}
+				{featuredImage ? <MediaImg image={featuredImage} variant="thumb" alt="" /> : <span class="thumb-blank" />}
 			</a>
 			<div class="row-body">
 				<p class="meta row-kicker">
 					{typeof index === "number" && <span class="row-no">{String(index).padStart(2, "0")}</span>}
-					{category && <a href={`/${category.slug}`} class="cat-word">{catEn}<span class="cat-ja">{category.label}</span></a>}
+					{category && <a href={`/${category.slug}/`} class="cat-word">{catEn}<span class="cat-ja">{category.label}</span></a>}
 					{formattedDate && <time datetime={isoDate(date)}>{formattedDate}</time>}
 					{readingTime && <span>{readingTime} min</span>}
 				</p>
@@ -61,7 +61,7 @@ const shownTags = (tags ?? []).slice(0, 3);
 				{shownTags.length > 0 && (
 					<p class="row-meta row-tags">
 						{shownTags.map((t) => (
-							<a href={`/tag/${encodeURIComponent(t.slug)}`} class="tag-pill">
+							<a href={`/tag/${encodeURIComponent(t.slug)}/`} class="tag-pill">
 								{t.label}
 							</a>
 						))}
@@ -72,10 +72,10 @@ const shownTags = (tags ?? []).slice(0, 3);
 	) : (
 		<article class="post-card">
 			<a href={href} class="card-image" aria-hidden="true" tabindex="-1">
-				{featuredImage ? <Image image={featuredImage} /> : <span class="thumb-blank" />}
+				{featuredImage ? <MediaImg image={featuredImage} variant="thumb" alt="" /> : <span class="thumb-blank" />}
 			</a>
 			<p class="meta card-kicker">
-				{category && <a href={`/${category.slug}`} class="cat-word">{catEn}<span class="cat-ja">{category.label}</span></a>}
+				{category && <a href={`/${category.slug}/`} class="cat-word">{catEn}<span class="cat-ja">{category.label}</span></a>}
 				{formattedDate && <time datetime={isoDate(date)}>{formattedDate}</time>}
 				{readingTime && <span>{readingTime} min</span>}
 			</p>
@@ -86,7 +86,7 @@ const shownTags = (tags ?? []).slice(0, 3);
 			{shownTags.length > 0 && (
 				<p class="card-tags">
 					{shownTags.map((t) => (
-						<a href={`/tag/${encodeURIComponent(t.slug)}`} class="tag-pill">
+						<a href={`/tag/${encodeURIComponent(t.slug)}/`} class="tag-pill">
 							{t.label}
 						</a>
 					))}
