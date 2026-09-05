@@ -31,7 +31,7 @@ export const LOGO_HEIGHT = 133;
  * Set to "https://www.eijuchi.com" at cutover so the workers.dev preview
  * never advertises itself as canonical.
  */
-export const CANONICAL_ORIGIN: string | null = null;
+export const CANONICAL_ORIGIN: string | null = "https://www.eijuchi.com";
 
 export function siteOrigin(url: URL): string {
 	return CANONICAL_ORIGIN ?? url.origin;
