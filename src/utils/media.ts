@@ -68,6 +68,21 @@ export function resizedUrl(key: string, width: number): string {
 	return `/_image?href=${encodeURIComponent(MEDIA_PREFIX + key)}&w=${width}&f=webp`;
 }
 
+/**
+ * Social-card image (og:image / twitter:image), site-relative.
+ * Crawlers (X, Facebook, LINE, Discord) want a JPEG/PNG well under ~1MB and
+ * fetch it once per share, so serve the 960px HERO width as JPEG — same width
+ * as the article hero, one extra unique transformation (format) per post.
+ * Originals at or below 960px are served as-is.
+ */
+export function ogImageUrl(img: MediaLike | string | null | undefined): string | null {
+	const key = mediaKey(img);
+	if (!key) return null;
+	const dims = mediaDims(img);
+	if (dims && dims.width <= WIDTHS.hero) return originalUrl(img);
+	return `/_image?href=${encodeURIComponent(MEDIA_PREFIX + key)}&w=${WIDTHS.hero}&f=jpeg`;
+}
+
 export function mediaDims(img: MediaLike | string | null | undefined): { width: number; height: number } | null {
 	if (!img || typeof img === "string") return null;
 	const w = img.width ?? img.meta?.width;
