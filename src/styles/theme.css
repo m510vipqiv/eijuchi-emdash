@@ -1,69 +1,75 @@
 /*
   theme.css -- eijuchi.com theme overrides.
 
-  Palette: navy ink + magenta / cyan "glitch" accents lifted from the
-  永住地 logo. Light mode is white paper with navy text; dark mode is a
-  deep navy-black. Declarations here are unlayered so they always beat
-  the @layer base defaults in tokens.css.
+  Direction: a game magazine, not a SaaS landing page. Warm paper canvas,
+  one ink colour with alpha for hierarchy, a single accent (the logo
+  magenta) used sparingly, hairline rules instead of shadows, corners
+  barely rounded, no gradients. Dates and labels are set in a monospace
+  face like a masthead's small print.
+
+  Declarations here are unlayered so they always beat the @layer base
+  defaults in tokens.css.
 */
 
 :root {
-	/* Surfaces */
-	--color-bg: light-dark(#ffffff, #0b0e17);
-	--color-bg-subtle: light-dark(#f6f7fb, #0f1320);
-	--color-surface: light-dark(#f1f3f9, #161b2c);
-	--color-border: light-dark(#e2e5ef, #262d43);
-	--color-border-subtle: light-dark(#edeff6, #1b2134);
+	/* Canvas & surfaces — never pure white / pure black */
+	--color-bg: light-dark(#f6f4ef, #171613);
+	--color-bg-subtle: light-dark(#f1eee7, #1c1b17);
+	--color-surface: light-dark(#ebe8e0, #23221d);
+	--color-border: light-dark(rgba(26, 24, 21, 0.16), rgba(236, 232, 223, 0.18));
+	--color-border-subtle: light-dark(rgba(26, 24, 21, 0.09), rgba(236, 232, 223, 0.1));
+	--color-rule-strong: light-dark(#1a1815, #ece8df);
 
-	/* Ink */
-	--color-text: light-dark(#171c2e, #e8ebf5);
-	--color-text-secondary: light-dark(#4b5268, #a6adc3);
-	--color-muted: light-dark(#858ba3, #6c7593);
+	/* Ink — hierarchy comes from alpha, not from different hues */
+	--color-text: light-dark(#1a1815, #ece8df);
+	--color-text-secondary: light-dark(rgba(26, 24, 21, 0.72), rgba(236, 232, 223, 0.72));
+	--color-muted: light-dark(rgba(26, 24, 21, 0.5), rgba(236, 232, 223, 0.5));
 
-	/* Brand: magenta (primary) + cyan (secondary) from the logo glitch */
-	--color-brand: light-dark(#d4127c, #ff4fa8);
-	--color-brand-hover: light-dark(#a80d62, #ff7dbf);
-	--color-accent: light-dark(#0b9fb5, #3ae0f2);
-	--color-navy: light-dark(#1b2440, #e8ebf5);
+	/* Accent: the logo magenta. Links on hover, active marks, nothing else. */
+	--color-brand: light-dark(#c8105e, #ff4d9a);
+	--color-brand-hover: light-dark(#9c0c49, #ff7db5);
+	--color-accent: light-dark(#0f8fa3, #45d1e6);
 	--color-on-brand: #ffffff;
-	--color-brand-ring: color-mix(in srgb, var(--color-brand) 22%, transparent);
-	--gradient-glitch: linear-gradient(90deg, #ff2e97 0%, #ff2e97 45%, #23d5e8 55%, #23d5e8 100%);
-	--gradient-glitch-soft: linear-gradient(90deg, #ff2e97, #23d5e8);
+	--color-brand-ring: color-mix(in srgb, var(--color-brand) 25%, transparent);
+	--color-ink-fill: light-dark(#1a1815, #ece8df);
+	--color-on-ink: light-dark(#f6f4ef, #171613);
 
-	/* Typography: Noto Sans JP via Google Fonts <link> (see Base.astro) */
+	/* Typography */
 	--font-body:
 		"Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo",
 		system-ui, sans-serif;
 	--font-heading: var(--font-body);
+	--font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
 	--font-weight-heading: 700;
-	--font-weight-display: 800;
+	--font-weight-display: 700;
 
-	/* Japanese text reads badly with negative tracking; keep it neutral */
-	--tracking-tight: -0.005em;
+	--tracking-tight: 0;
 	--tracking-snug: 0;
+	--tracking-wide: 0.08em;
+	--tracking-wider: 0.14em;
 
-	/* Softer radii for a more current feel */
-	--radius: 8px;
-	--radius-lg: 14px;
+	/* Shape — almost square; only images get 2px */
+	--radius: 2px;
+	--radius-lg: 3px;
 
-	--nav-height: 68px;
+	--nav-height: 64px;
 	--search-input-width: 200px;
+	--content-width: 700px;
+	--wide-width: 1120px;
 
-	--shadow-sm: 0 1px 2px rgba(15, 20, 40, 0.06);
-	--shadow-lg: 0 14px 40px rgba(15, 20, 40, 0.14);
-	--shadow-card: 0 10px 30px -12px rgba(23, 28, 46, 0.25);
-}
+	/* No drop shadows in this system */
+	--shadow-sm: none;
+	--shadow-lg: none;
+	--shadow-card: none;
 
-:root.dark {
-	--shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.55);
-	--shadow-card: 0 12px 30px -10px rgba(0, 0, 0, 0.6);
+	--transition-fast: 120ms ease;
+	--transition-base: 180ms ease;
 }
 
 /*
-  Explicit theme choice (footer/header toggle sets .light / .dark on <html>).
+  Explicit theme choice (header toggle sets .light / .dark on <html>).
   Astro's Lightning CSS polyfills light-dark() with the --lightningcss-*
-  variables, so set them alongside color-scheme; the @supports guard the
-  template used gets stripped by the minifier and never applied.
+  variables, so set them alongside color-scheme.
 */
 :root.light {
 	color-scheme: light;
@@ -80,18 +86,20 @@
 /* Fallback for browsers without light-dark() */
 @supports not (color: light-dark(#000, #fff)) {
 	:root {
-		--color-bg: #ffffff;
-		--color-bg-subtle: #f6f7fb;
-		--color-surface: #f1f3f9;
-		--color-border: #e2e5ef;
-		--color-border-subtle: #edeff6;
-		--color-text: #171c2e;
-		--color-text-secondary: #4b5268;
-		--color-muted: #858ba3;
-		--color-brand: #d4127c;
-		--color-brand-hover: #a80d62;
-		--color-accent: #0b9fb5;
-		--color-navy: #1b2440;
+		--color-bg: #f6f4ef;
+		--color-bg-subtle: #f1eee7;
+		--color-surface: #ebe8e0;
+		--color-border: rgba(26, 24, 21, 0.16);
+		--color-border-subtle: rgba(26, 24, 21, 0.09);
+		--color-rule-strong: #1a1815;
+		--color-text: #1a1815;
+		--color-text-secondary: rgba(26, 24, 21, 0.72);
+		--color-muted: rgba(26, 24, 21, 0.5);
+		--color-brand: #c8105e;
+		--color-brand-hover: #9c0c49;
+		--color-accent: #0f8fa3;
+		--color-ink-fill: #1a1815;
+		--color-on-ink: #f6f4ef;
 	}
 }
 
@@ -106,92 +114,185 @@ h3,
 }
 
 body {
-	text-wrap: pretty;
 	overflow-wrap: anywhere;
 }
 
-h1,
-h2,
-h3,
-h4 {
-	text-wrap: balance;
+/* ---- Shared editorial primitives ---------------------------------- */
+
+/* Small print: dates, categories, counters. Mono, small, slightly spaced. */
+.meta,
+.kicker {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0.04em;
+	color: var(--color-muted);
+	font-feature-settings: "tnum" 1;
 }
 
-/* Glitch accent bar reused by section headings */
-.glitch-bar {
-	display: inline-block;
-	width: 28px;
-	height: 4px;
-	border-radius: 2px;
-	background: var(--gradient-glitch);
+.kicker {
+	color: var(--color-text);
+	text-transform: uppercase;
+	letter-spacing: var(--tracking-wide);
 }
 
-/* Category chips: one accent per category, consistent site-wide */
-.cat-chip {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.35em;
-	padding: 2px 10px;
-	border-radius: 999px;
-	font-size: var(--font-size-xs);
+/* Section heading: a label sitting on a heavy rule, newspaper style */
+.section-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--spacing-4);
+	padding-bottom: var(--spacing-2);
+	border-bottom: 2px solid var(--color-rule-strong);
+	margin-bottom: var(--spacing-6);
+}
+
+.section-head h2,
+.section-head .section-title {
+	font-size: var(--font-size-base);
 	font-weight: 700;
 	letter-spacing: 0.02em;
+}
+
+.section-head .section-more {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0.04em;
+	color: var(--color-muted);
 	text-decoration: none;
-	color: var(--cat-color, var(--color-brand));
-	background: color-mix(in srgb, var(--cat-color, var(--color-brand)) 12%, transparent);
-	border: 1px solid color-mix(in srgb, var(--cat-color, var(--color-brand)) 30%, transparent);
-	transition:
-		background var(--transition-fast),
-		color var(--transition-fast);
+}
+
+.section-head .section-more:hover {
+	color: var(--color-brand);
+}
+
+/* Category as plain text, not a coloured chip */
+.cat-chip {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0.04em;
+	color: var(--color-text);
+	text-decoration: none;
 	white-space: nowrap;
 }
 
 .cat-chip:hover {
-	color: var(--color-on-brand);
-	background: var(--cat-color, var(--color-brand));
+	color: var(--color-brand);
 }
 
-.cat-chip--news {
-	--cat-color: light-dark(#d4127c, #ff4fa8);
-}
-.cat-chip--guide {
-	--cat-color: light-dark(#0b9fb5, #3ae0f2);
-}
-.cat-chip--column {
-	--cat-color: light-dark(#6d4fd6, #a48cff);
-}
-.cat-chip--review {
-	--cat-color: light-dark(#e0801a, #ffb35c);
-}
-
-/* Small "tag" pills shared by cards, archives and single posts */
+/* Tags: "#name" in small print, comma-style list */
 .tag-pill {
-	display: inline-block;
-	padding: var(--tag-padding-y) var(--spacing-2);
-	font-size: var(--font-size-xs);
-	color: var(--color-text-secondary);
-	background: var(--color-surface);
-	border-radius: var(--radius);
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--color-muted);
 	text-decoration: none;
-	transition:
-		color var(--transition-fast),
-		background var(--transition-fast);
-}
-
-.tag-pill:hover {
-	color: var(--color-text);
-	background: var(--color-border);
+	transition: color var(--transition-fast);
 }
 
 .tag-pill::before {
 	content: "#";
-	opacity: 0.55;
-	margin-right: 1px;
+	opacity: 0.6;
 }
 
-/* Keep the admin link from hugging the nav */
-.nav-admin {
-	margin-inline-start: var(--spacing-5);
+.tag-pill:hover {
+	color: var(--color-brand);
+}
+
+/* Solid ink button, square-ish */
+.btn-ink {
+	display: inline-block;
+	padding: 0.7rem 1.4rem;
+	background: var(--color-ink-fill);
+	color: var(--color-on-ink);
+	font-size: var(--font-size-sm);
+	font-weight: 700;
+	text-decoration: none;
+	border: 1px solid var(--color-ink-fill);
+	border-radius: var(--radius);
+	transition:
+		background var(--transition-fast),
+		color var(--transition-fast);
+}
+
+.btn-ink:hover {
+	background: transparent;
+	color: var(--color-text);
+}
+
+/* Ruled list item (thumbnail + text) used on archives and home */
+.row-item {
+	display: grid;
+	grid-template-columns: 168px minmax(0, 1fr);
+	gap: var(--spacing-5);
+	padding: var(--spacing-5) 0;
+	border-top: 1px solid var(--color-border-subtle);
+}
+
+.row-item:first-child {
+	border-top: none;
+	padding-top: 0;
+}
+
+.row-item .row-thumb {
+	aspect-ratio: 16 / 10;
+	overflow: hidden;
+	border-radius: var(--radius);
+	background: var(--color-surface);
+}
+
+.row-item .row-thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.row-item .row-title {
+	font-size: var(--font-size-lg);
+	font-weight: 700;
+	line-height: 1.45;
+	margin: var(--spacing-1) 0 var(--spacing-2);
+}
+
+.row-item .row-title a {
+	color: var(--color-text);
+	text-decoration: none;
+}
+
+.row-item .row-title a:hover {
+	text-decoration: underline;
+	text-decoration-color: var(--color-brand);
+	text-underline-offset: 4px;
+	text-decoration-thickness: 2px;
+}
+
+.row-item .row-excerpt {
+	font-size: var(--font-size-sm);
+	line-height: 1.7;
+	color: var(--color-text-secondary);
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.row-item .row-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 var(--spacing-3);
+}
+
+@media (max-width: 600px) {
+	.row-item {
+		grid-template-columns: 112px minmax(0, 1fr);
+		gap: var(--spacing-4);
+	}
+
+	.row-item .row-title {
+		font-size: var(--font-size-base);
+	}
+
+	.row-item .row-excerpt {
+		display: none;
+	}
 }
 
 /*
