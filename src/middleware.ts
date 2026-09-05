@@ -11,8 +11,14 @@ import { defineMiddleware } from "astro:middleware";
  */
 const SKIP_PREFIXES = ["/_emdash", "/_image", "/_astro", "/cdn-cgi", "/posts", "/category", "/pages", "/wp-content"];
 
+const CANONICAL_HOST = "www.eijuchi.com";
+
 export const onRequest = defineMiddleware((context, next) => {
-	const { pathname, search } = context.url;
+	const { pathname, search, hostname } = context.url;
+	// Apex → www (both hostnames are bound to the Worker as custom domains).
+	if (hostname === "eijuchi.com") {
+		return context.redirect(`https://${CANONICAL_HOST}${pathname}${search}`, 301);
+	}
 	if (
 		context.request.method === "GET" &&
 		pathname.length > 1 &&
