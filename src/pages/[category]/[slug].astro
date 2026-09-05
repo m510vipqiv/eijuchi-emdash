@@ -20,6 +20,7 @@ import PostCard from "../../components/PostCard.astro";
 import { getReadingTime } from "../../utils/reading-time";
 import { resolveBlogSiteIdentity, siteOrigin } from "../../utils/site-identity";
 import {
+	tagHref,
 	CATEGORIES,
 	isCategorySlug,
 	categoryLabel,
@@ -179,7 +180,7 @@ const breadcrumbJsonLd = {
 							tags.length > 0 && (
 								<div class="article-tags">
 									{tags.map((t) => (
-										<a href={`/tag/${encodeURIComponent(t.slug)}/`} class="tag-pill">
+										<a href={tagHref(t.slug)} class="tag-pill">
 											{t.label}
 										</a>
 									))}
@@ -270,7 +271,7 @@ const breadcrumbJsonLd = {
 									<h2 class="side-head">Tags</h2>
 									<p class="side-tags">
 										{tags.map((t) => (
-											<a href={`/tag/${encodeURIComponent(t.slug)}/`} class="tag-pill">
+											<a href={tagHref(t.slug)} class="tag-pill">
 												{t.label}
 											</a>
 										))}
