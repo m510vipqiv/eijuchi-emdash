@@ -9,6 +9,7 @@ import {
 	CATEGORIES,
 	primaryCategory,
 	categoryLabel,
+	categoryEn,
 	postHref,
 	formatDateJa,
 	isoDate,
@@ -92,13 +93,14 @@ const websiteJsonLd = {
 			<div class="home-content">
 				{featuredPost && (
 					<section class="lead" aria-label="最新の注目記事">
+						<p class="outline-word lead-word" aria-hidden="true">Latest</p>
 						<p class="kicker lead-kicker">
-							<span>Latest</span>
+							<a href={`/${featuredCat!.slug}`} class="tag-block">{categoryEn(featuredCat!.slug)}</a>
 							<span class="lead-kicker-rule" aria-hidden="true" />
 							<a href={`/${featuredCat!.slug}`}>{featuredCat!.label}</a>
 						</p>
 						<div class="lead-grid">
-							<a href={postHref(featuredCat!.slug, featuredPost.id)} class="lead-image" aria-hidden="true" tabindex="-1">
+							<a href={postHref(featuredCat!.slug, featuredPost.id)} class="lead-image frame-ink frame-ink--brand" aria-hidden="true" tabindex="-1">
 								{featuredPost.data.featured_image ? (
 									<Image image={featuredPost.data.featured_image} />
 								) : (
@@ -141,6 +143,7 @@ const websiteJsonLd = {
 							<section class="posts-section" aria-labelledby="latest-heading">
 								<header class="section-head">
 									<h2 id="latest-heading">新着記事</h2>
+									<span class="section-word" aria-hidden="true">New</span>
 									<a href="/articles" class="section-more">すべての記事 →</a>
 								</header>
 								<div class="posts-grid">
@@ -164,6 +167,7 @@ const websiteJsonLd = {
 							<section class="posts-section" aria-labelledby="more-heading">
 								<header class="section-head">
 									<h2 id="more-heading">続けて読む</h2>
+									<span class="section-word" aria-hidden="true">More</span>
 									<a href="/articles" class="section-more">記事一覧 →</a>
 								</header>
 								<div class="posts-rows">
@@ -197,7 +201,10 @@ const websiteJsonLd = {
 									<li>
 										<a href={`/${c.slug}`}>
 											<span class="rail-no">{String(i + 1).padStart(2, "0")}</span>
-											<span class="rail-label">{c.label}</span>
+											<span class="rail-label">
+												<span class="rail-en">{c.en}</span>
+												<span class="rail-ja">{c.label}</span>
+											</span>
 											<span class="rail-count">{categoryCounts.get(c.slug) ?? 0}</span>
 										</a>
 									</li>
@@ -243,26 +250,41 @@ const websiteJsonLd = {
 
 	/* ---- Lead story ---------------------------------------------- */
 	.lead {
+		position: relative;
 		padding-bottom: var(--spacing-12);
 		margin-bottom: var(--spacing-12);
 		border-bottom: 1px solid var(--color-rule-strong);
+	}
+
+	.lead-word {
+		position: absolute;
+		right: -0.02em;
+		top: -0.35em;
+		font-size: clamp(4rem, 12vw, 9rem);
+		z-index: 0;
+	}
+
+	.lead-kicker,
+	.lead-grid {
+		position: relative;
+		z-index: 1;
 	}
 
 	.lead-kicker {
 		display: flex;
 		align-items: center;
 		gap: var(--spacing-3);
-		margin-bottom: var(--spacing-5);
+		margin-bottom: var(--spacing-6);
 	}
 
-	.lead-kicker a {
+	.lead-kicker a:not(.tag-block) {
 		color: var(--color-text);
 		text-decoration: none;
 		text-transform: none;
 		letter-spacing: 0.04em;
 	}
 
-	.lead-kicker a:hover {
+	.lead-kicker a:not(.tag-block):hover {
 		color: var(--color-brand);
 	}
 
@@ -281,10 +303,15 @@ const websiteJsonLd = {
 
 	.lead-image {
 		display: block;
-		overflow: hidden;
-		border-radius: var(--radius);
-		background: var(--color-surface);
 		aspect-ratio: 16 / 9;
+		margin-right: 8px;
+		transition: box-shadow var(--transition-base), transform var(--transition-base);
+	}
+
+	.lead:has(.lead-title a:hover) .lead-image,
+	.lead-image:hover {
+		box-shadow: 12px 12px 0 0 var(--color-brand);
+		transform: translate(-2px, -2px);
 	}
 
 	.lead-image :global(img),
@@ -306,10 +333,10 @@ const websiteJsonLd = {
 	}
 
 	.lead-title {
-		font-size: clamp(var(--font-size-2xl), 2.8vw, 2.25rem);
-		font-weight: 700;
-		line-height: 1.3;
-		letter-spacing: 0;
+		font-size: clamp(var(--font-size-2xl), 2.9vw, 2.4rem);
+		font-weight: 900;
+		line-height: 1.28;
+		letter-spacing: -0.01em;
 	}
 
 	.lead-title a {
@@ -411,10 +438,29 @@ const websiteJsonLd = {
 		font-size: var(--font-size-sm);
 	}
 
-	.rail-list a:hover .rail-label {
-		text-decoration: underline;
-		text-decoration-color: var(--color-brand);
-		text-underline-offset: 3px;
+	.rail-label {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5em;
+	}
+
+	.rail-en {
+		font-family: var(--font-display);
+		font-weight: 800;
+		font-size: 1.5rem;
+		line-height: 1;
+		text-transform: uppercase;
+		letter-spacing: 0.01em;
+	}
+
+	.rail-ja {
+		font-size: 0.72rem;
+		font-weight: 500;
+		color: var(--color-muted);
+	}
+
+	.rail-list a:hover .rail-en {
+		color: var(--color-brand);
 	}
 
 	.rail-no,
