@@ -29,6 +29,9 @@ export default defineConfig({
 			// Keep public HTML identical for every visitor so the edge cache stays
 			// effective; editors get an "Edit" pill that reloads uncached.
 			toolbar: "client",
+			// Canonical browser-facing origin: passkeys (rpId), CSRF, invite/magic
+			// links all key off this. The workers.dev hostname is deploy-only.
+			siteUrl: "https://www.eijuchi.com",
 		}),
 	],
 	// Noto Sans JP is loaded via a Google Fonts <link> in Base.astro: the Astro
