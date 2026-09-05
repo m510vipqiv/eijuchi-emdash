@@ -37,6 +37,20 @@ export function siteOrigin(url: URL): string {
 	return CANONICAL_ORIGIN ?? url.origin;
 }
 
+/**
+ * True when the request is served from the real site domain. Staging and
+ * branch previews live on *.workers.dev and are served with noindex +
+ * robots Disallow so they never compete with the canonical domain.
+ */
+export function isCanonicalHost(url: URL): boolean {
+	if (url.hostname.endsWith(".workers.dev")) return false;
+	if (CANONICAL_ORIGIN) return url.origin === CANONICAL_ORIGIN;
+	return true;
+}
+
+/** Default share image (1200x630, EmDash media) for pages without their own. */
+export const DEFAULT_OG_IMAGE_PATH = "/_emdash/api/media/file/01M1S3JYGPVXDZJNTG8Y0F8V4G.png";
+
 export function resolveBlogSiteIdentity(settings?: BlogSiteIdentitySettings) {
 	return {
 		siteTitle: settings?.title ?? DEFAULT_SITE_TITLE,
