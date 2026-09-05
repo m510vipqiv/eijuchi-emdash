@@ -69,17 +69,20 @@ const breadcrumbJsonLd = {
 				<span aria-hidden="true">/</span>
 				<span>{term.label}</span>
 			</nav>
-			<h1 class="archive-title"><span class="archive-hash" aria-hidden="true">#</span>{term.label}</h1>
-			<p class="archive-count">{count}件の記事</p>
+			<p class="kicker">Tag</p>
+			<h1 class="archive-title">#{term.label}</h1>
+			<p class="meta archive-count">{count} articles</p>
 		</header>
 
 		{
 			items.length === 0 ? (
 				<p class="no-posts">このタグの記事はまだありません。</p>
 			) : (
-				<div class="posts-grid">
-					{items.map(({ post, category, tags }) => (
+				<div class="posts-rows">
+					{items.map(({ post, category, tags }, i) => (
 						<PostCard
+							variant="row"
+							index={i + 1}
 							title={post.data.title}
 							excerpt={post.data.excerpt}
 							featuredImage={post.data.featured_image}
@@ -98,8 +101,8 @@ const breadcrumbJsonLd = {
 		{
 			nextCursor && (
 				<nav class="pagination" aria-label="ページ送り">
-					<a href={`/tag/${encodeURIComponent(term.slug)}?cursor=${encodeURIComponent(nextCursor)}`} class="pagination-next" rel="next">
-						さらに読み込む →
+					<a href={`/tag/${encodeURIComponent(term.slug)}?cursor=${encodeURIComponent(nextCursor)}`} class="btn-ink" rel="next">
+						次のページ →
 					</a>
 				</nav>
 			)
@@ -109,22 +112,25 @@ const breadcrumbJsonLd = {
 
 <style>
 	.archive-section {
-		max-width: var(--wide-width);
+		max-width: 860px;
 		margin: 0 auto;
-		padding: var(--spacing-10) var(--spacing-6) var(--spacing-20);
+		padding: var(--spacing-10) var(--spacing-6) var(--spacing-16);
 	}
 
 	.breadcrumb {
 		display: flex;
 		flex-wrap: wrap;
 		gap: var(--spacing-2);
-		font-size: var(--font-size-xs);
+		font-family: var(--font-mono);
+		font-size: 0.72rem;
+		letter-spacing: 0.04em;
 		color: var(--color-muted);
-		margin-bottom: var(--spacing-4);
+		margin-bottom: var(--spacing-6);
 	}
 
 	.breadcrumb a {
 		color: var(--color-muted);
+		text-decoration: none;
 	}
 
 	.breadcrumb a:hover {
@@ -132,60 +138,32 @@ const breadcrumbJsonLd = {
 	}
 
 	.archive-header {
-		margin-bottom: var(--spacing-12);
-		padding-bottom: var(--spacing-8);
-		border-bottom: 1px solid var(--color-border-subtle);
+		margin-bottom: var(--spacing-10);
+		padding-bottom: var(--spacing-6);
+		border-bottom: 2px solid var(--color-rule-strong);
+	}
+
+	.archive-header .kicker {
+		margin-bottom: var(--spacing-2);
 	}
 
 	.archive-title {
 		font-size: var(--font-size-4xl);
-		font-weight: var(--font-weight-display);
-		margin-bottom: var(--spacing-2);
+		font-weight: 700;
+		line-height: 1.2;
+		margin-bottom: var(--spacing-3);
 	}
 
-	.archive-hash {
-		color: var(--color-accent);
-		margin-right: 0.15em;
-	}
-
-	.archive-count,
 	.no-posts {
-		font-size: var(--font-size-sm);
 		color: var(--color-muted);
-	}
-
-	.posts-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: var(--spacing-12) var(--spacing-8);
 	}
 
 	.pagination {
 		display: flex;
-		justify-content: center;
-		margin-top: var(--spacing-16);
-	}
-
-	.pagination-next {
-		display: inline-block;
-		padding: var(--spacing-3) var(--spacing-8);
-		border-radius: 999px;
-		border: 1px solid var(--color-border);
-		color: var(--color-text);
-		font-weight: 600;
-		text-decoration: none;
-	}
-
-	.pagination-next:hover {
-		border-color: var(--color-brand);
-		color: var(--color-brand);
-		box-shadow: 0 0 0 3px var(--color-brand-ring);
-	}
-
-	@media (max-width: 900px) {
-		.posts-grid {
-			grid-template-columns: repeat(2, 1fr);
-		}
+		justify-content: flex-end;
+		margin-top: var(--spacing-10);
+		padding-top: var(--spacing-6);
+		border-top: 1px solid var(--color-border-subtle);
 	}
 
 	@media (max-width: 600px) {
@@ -195,10 +173,6 @@ const breadcrumbJsonLd = {
 
 		.archive-title {
 			font-size: var(--font-size-3xl);
-		}
-
-		.posts-grid {
-			grid-template-columns: 1fr;
 		}
 	}
 </style>
