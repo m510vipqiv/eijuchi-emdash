@@ -4,10 +4,16 @@ import Base from "../../layouts/Base.astro";
 import PostCard from "../../components/PostCard.astro";
 import { getReadingTime } from "../../utils/reading-time";
 import { resolveBlogSiteIdentity, siteOrigin } from "../../utils/site-identity";
-import { primaryCategory, categoryLabel, postHref } from "../../utils/categories";
+import { tagHref, tagSlugCandidates, primaryCategory, categoryLabel, postHref } from "../../utils/categories";
 
 const slug = decodeSlug(Astro.params.slug);
-const term = slug ? await getTerm("tag", slug) : null;
+let term: Awaited<ReturnType<typeof getTerm>> = null;
+if (slug) {
+	for (const candidate of tagSlugCandidates(slug)) {
+		term = await getTerm("tag", candidate);
+		if (term) break;
+	}
+}
 if (!term) return new Response(null, { status: 404 });
 
 const PER_PAGE = 24;
@@ -40,7 +46,7 @@ const items = posts.map((post) => {
 });
 
 const count = term.count ?? posts.length;
-const canonical = `${origin}/tag/${encodeURIComponent(term.slug)}/${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`;
+const canonical = `${origin}${tagHref(term.slug)}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`;
 
 const breadcrumbJsonLd = {
 	"@context": "https://schema.org",
@@ -48,7 +54,7 @@ const breadcrumbJsonLd = {
 	itemListElement: [
 		{ "@type": "ListItem", position: 1, name: siteTitle, item: `${origin}/` },
 		{ "@type": "ListItem", position: 2, name: "タグ一覧", item: `${origin}/tags/` },
-		{ "@type": "ListItem", position: 3, name: term.label, item: `${origin}/tag/${encodeURIComponent(term.slug)}/` },
+		{ "@type": "ListItem", position: 3, name: term.label, item: `${origin}${tagHref(term.slug)}` },
 	],
 };
 ---
@@ -102,7 +108,7 @@ const breadcrumbJsonLd = {
 		{
 			nextCursor && (
 				<nav class="pagination" aria-label="ページ送り">
-					<a href={`/tag/${encodeURIComponent(term.slug)}/?cursor=${encodeURIComponent(nextCursor)}`} class="btn-ink" rel="next">
+					<a href={`${tagHref(term.slug)}?cursor=${encodeURIComponent(nextCursor)}`} class="btn-ink" rel="next">
 						次のページ →
 					</a>
 				</nav>

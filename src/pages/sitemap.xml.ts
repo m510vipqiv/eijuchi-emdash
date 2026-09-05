@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { getEmDashCollection, getTermsForEntries, getTaxonomyTerms } from "emdash";
 
 import { siteOrigin } from "../utils/site-identity";
-import { CATEGORIES, primaryCategory, postHref, effectiveModified } from "../utils/categories";
+import { tagHref, CATEGORIES, primaryCategory, postHref, effectiveModified } from "../utils/categories";
 
 /**
  * /sitemap.xml — posts (category URLs), static pages, category archives, tags.
@@ -65,7 +65,7 @@ export const GET: APIRoute = async ({ url }) => {
 	const tags = await getTaxonomyTerms("tag");
 	for (const t of tags) {
 		if ((t.count ?? 0) === 0) continue;
-		entries.push({ loc: `${origin}/tag/${encodeURIComponent(t.slug)}/`, changefreq: "weekly", priority: "0.4" });
+		entries.push({ loc: `${origin}${tagHref(t.slug)}`, changefreq: "weekly", priority: "0.4" });
 	}
 
 	const body = `<?xml version="1.0" encoding="UTF-8"?>
