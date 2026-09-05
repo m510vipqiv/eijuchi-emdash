@@ -71,7 +71,7 @@ const navItems = [
 	...CATEGORIES.map((c) => ({
 		label: c.label,
 		en: c.en as string | undefined,
-		url: `/${c.slug}`,
+		url: `/${c.slug}/`,
 		target: undefined as string | undefined,
 	})),
 	{ label: "記事一覧", en: "All", url: "/articles/", target: undefined as string | undefined },
