@@ -32,4 +32,7 @@
 	},
 	// Workers Cache: edge cache in front of the Worker (see astro.config.mjs).
 	"cache": { "enabled": true },
+	// Email Routing send binding (Email Service). Free plan: delivery only to the
+	// account's verified destination addresses — form notifications go to one.
+	"send_email": [{ "name": "EMAIL" }],
 }
