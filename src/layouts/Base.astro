@@ -161,8 +161,7 @@ const currentPath = Astro.url.pathname;
 		<EmDashBodyStart page={pageCtx} />
 		<a href="#main" class="skip-link">本文へ移動</a>
 		<header class="site-header">
-			<div class="glitch-line" aria-hidden="true"></div>
-			<nav class="nav" aria-label="メインナビゲーション">
+			<div class="masthead">
 				<a href="/" class="site-title" aria-label={`${siteTitle} ホーム`}>
 					<img
 						src={LOGO_LIGHT_URL}
@@ -181,19 +180,7 @@ const currentPath = Astro.url.pathname;
 						class="site-logo-img site-logo-img--dark"
 					/>
 				</a>
-				<div class="nav-links">
-					{
-						navItems.map((item) => (
-							<a
-								href={item.url}
-								target={item.target}
-								aria-current={currentPath === item.url || currentPath.startsWith(item.url + "/") ? "page" : undefined}
-							>
-								{item.label}
-							</a>
-						))
-					}
-				</div>
+				<p class="masthead-tagline">{siteTagline}</p>
 				<div class="nav-right">
 					<LiveSearch
 						placeholder="サイト内検索"
@@ -219,6 +206,22 @@ const currentPath = Astro.url.pathname;
 								管理
 							</a>
 						)
+					}
+				</div>
+			</div>
+			<nav class="nav" aria-label="メインナビゲーション">
+				<div class="nav-links">
+					{
+						navItems.map((item, i) => (
+							<a
+								href={item.url}
+								target={item.target}
+								aria-current={currentPath === item.url || currentPath.startsWith(item.url + "/") ? "page" : undefined}
+							>
+								<span class="nav-index" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+								{item.label}
+							</a>
+						))
 					}
 				</div>
 			</nav>
@@ -274,8 +277,8 @@ const currentPath = Astro.url.pathname;
 					</div>
 				</div>
 				<div class="footer-bottom">
-					<p class="footer-copyright">© {year} {siteTitle}</p>
-					<p class="footer-note">Powered by <a href="https://emdashcms.com" rel="noopener">EmDash</a></p>
+					<p class="footer-copyright">© {year} {siteTitle} — eijuchi.com</p>
+					<p class="footer-note">Powered by <a href="https://emdashcms.com" rel="noopener">EmDash</a> / Built on Cloudflare</p>
 				</div>
 			</div>
 		</footer>
@@ -357,13 +360,17 @@ const currentPath = Astro.url.pathname;
 				}
 
 				a:where(:not([class*="emdash"]):not([class*="ec-"])) {
-					color: var(--color-brand);
-					text-decoration: none;
-					transition: color var(--transition-fast);
+					color: var(--color-text);
+					text-decoration: underline;
+					text-decoration-thickness: 1px;
+					text-underline-offset: 3px;
+					text-decoration-color: var(--color-border);
+					transition: color var(--transition-fast), text-decoration-color var(--transition-fast);
 				}
 
 				a:where(:not([class*="emdash"]):not([class*="ec-"])):hover {
-					color: var(--color-brand-hover);
+					color: var(--color-brand);
+					text-decoration-color: var(--color-brand);
 				}
 
 				img {
@@ -390,8 +397,8 @@ const currentPath = Astro.url.pathname;
 				}
 
 				::selection {
-					background: var(--color-brand);
-					color: var(--color-on-brand);
+					background: var(--color-ink-fill);
+					color: var(--color-on-ink);
 				}
 
 			}
@@ -404,8 +411,8 @@ const currentPath = Astro.url.pathname;
 				top: 8px;
 				z-index: 1000;
 				padding: var(--spacing-2) var(--spacing-3);
-				background: var(--color-brand);
-				color: var(--color-on-brand);
+				background: var(--color-ink-fill);
+				color: var(--color-on-ink);
 				border-radius: var(--radius);
 			}
 
@@ -413,29 +420,19 @@ const currentPath = Astro.url.pathname;
 				left: 8px;
 			}
 
+			/* ---- Masthead ------------------------------------------------ */
 			.site-header {
-				position: sticky;
-				top: 0;
-				z-index: 100;
-				background: color-mix(in srgb, var(--color-bg) 90%, transparent);
-				backdrop-filter: blur(16px) saturate(1.4);
-				-webkit-backdrop-filter: blur(16px) saturate(1.4);
-				border-bottom: 1px solid var(--color-border-subtle);
+				background: var(--color-bg);
+				border-bottom: 3px double var(--color-rule-strong);
 			}
 
-			.glitch-line {
-				height: 3px;
-				background: var(--gradient-glitch);
-			}
-
-			.nav {
+			.masthead {
 				display: flex;
 				align-items: center;
-				gap: var(--spacing-8);
+				gap: var(--spacing-6);
 				max-width: var(--wide-width);
 				margin: 0 auto;
-				padding: 0 var(--spacing-6);
-				height: var(--nav-height);
+				padding: var(--spacing-5) var(--spacing-6) var(--spacing-4);
 			}
 
 			.site-title {
@@ -445,14 +442,20 @@ const currentPath = Astro.url.pathname;
 			}
 
 			.site-logo-img {
-				height: 40px;
+				height: 44px;
 				width: auto;
 				display: block;
-				transition: filter var(--transition-fast);
 			}
 
-			.site-title:hover .site-logo-img {
-				filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-brand) 55%, transparent));
+			.masthead-tagline {
+				font-family: var(--font-mono);
+				font-size: 0.72rem;
+				letter-spacing: 0.04em;
+				color: var(--color-muted);
+				padding-left: var(--spacing-6);
+				border-left: 1px solid var(--color-border);
+				line-height: 1.5;
+				max-width: 26em;
 			}
 
 			/* Logo variant switching (OS preference + explicit toggle). Unlayered so it
@@ -499,46 +502,6 @@ const currentPath = Astro.url.pathname;
 				}
 			}
 
-			.nav-links {
-				display: flex;
-				align-items: center;
-				gap: var(--spacing-1);
-				font-size: var(--font-size-sm);
-				font-weight: 500;
-			}
-
-			.nav-links a {
-				position: relative;
-				padding: var(--spacing-2) var(--spacing-3);
-				border-radius: var(--radius);
-				color: var(--color-text-secondary);
-				text-decoration: none;
-				white-space: nowrap;
-				transition:
-					color var(--transition-fast),
-					background var(--transition-fast);
-			}
-
-			.nav-links a:hover {
-				color: var(--color-text);
-				background: var(--color-surface);
-			}
-
-			.nav-links a[aria-current="page"] {
-				color: var(--color-text);
-			}
-
-			.nav-links a[aria-current="page"]::after {
-				content: "";
-				position: absolute;
-				left: var(--spacing-3);
-				right: var(--spacing-3);
-				bottom: 2px;
-				height: 2px;
-				border-radius: 2px;
-				background: var(--gradient-glitch-soft);
-			}
-
 			.nav-right {
 				display: flex;
 				align-items: center;
@@ -550,55 +513,101 @@ const currentPath = Astro.url.pathname;
 				display: inline-flex;
 				align-items: center;
 				justify-content: center;
-				width: 38px;
-				height: 38px;
-				border-radius: 999px;
+				width: 36px;
+				height: 36px;
+				border-radius: var(--radius);
 				border: 1px solid var(--color-border);
-				background: var(--color-bg);
-				color: var(--color-text-secondary);
+				background: transparent;
+				color: var(--color-text);
 				cursor: pointer;
 				transition:
-					color var(--transition-fast),
-					border-color var(--transition-fast),
-					transform var(--transition-fast);
+					background var(--transition-fast),
+					color var(--transition-fast);
 			}
 
 			.theme-toggle:hover {
-				color: var(--color-brand);
-				border-color: var(--color-brand);
-				transform: rotate(-12deg);
+				background: var(--color-ink-fill);
+				color: var(--color-on-ink);
+				border-color: var(--color-ink-fill);
 			}
 
 			.nav-admin {
-				font-size: var(--font-size-sm);
+				font-family: var(--font-mono);
+				font-size: 0.72rem;
 				color: var(--color-text-secondary);
 				text-decoration: none;
-				transition: color var(--transition-fast);
 			}
 
 			.nav-admin:hover {
-				color: var(--color-text);
+				color: var(--color-brand);
 			}
 
-			/* Search styling */
+			/* ---- Section nav row ------------------------------------------ */
+			.nav {
+				max-width: var(--wide-width);
+				margin: 0 auto;
+				padding: 0 var(--spacing-6);
+				border-top: 1px solid var(--color-border);
+			}
+
+			.nav-links {
+				display: flex;
+				align-items: stretch;
+				gap: 0;
+				font-size: var(--font-size-sm);
+				font-weight: 500;
+			}
+
+			.nav-links a {
+				display: inline-flex;
+				align-items: baseline;
+				gap: 0.45em;
+				padding: 0.7rem 0;
+				margin-right: var(--spacing-8);
+				color: var(--color-text);
+				text-decoration: none;
+				white-space: nowrap;
+				border-bottom: 2px solid transparent;
+				margin-bottom: -1px;
+				transition: border-color var(--transition-fast);
+			}
+
+			.nav-index {
+				font-family: var(--font-mono);
+				font-size: 0.68rem;
+				color: var(--color-muted);
+				letter-spacing: 0.04em;
+			}
+
+			.nav-links a:hover {
+				border-bottom-color: var(--color-border);
+			}
+
+			.nav-links a[aria-current="page"] {
+				border-bottom-color: var(--color-rule-strong);
+			}
+
+			.nav-links a[aria-current="page"] .nav-index {
+				color: var(--color-brand);
+			}
+
+			/* ---- Search ---------------------------------------------------- */
 			.site-search {
 				position: relative;
 				width: var(--search-input-width);
-				--emdash-search-border-focus: var(--color-brand);
+				--emdash-search-border-focus: var(--color-rule-strong);
 			}
 
 			:global(.site-search-input) {
 				width: var(--search-input-width);
-				padding: var(--spacing-2) var(--spacing-3);
+				padding: 0.45rem 0.6rem;
 				font-family: var(--font-body);
 				font-size: var(--font-size-sm);
 				border: 1px solid var(--color-border);
-				border-radius: 999px;
-				background: var(--color-bg);
+				border-radius: var(--radius);
+				background: transparent;
 				color: var(--color-text);
-				transition:
-					border-color var(--transition-fast),
-					box-shadow var(--transition-fast);
+				transition: border-color var(--transition-fast);
 			}
 
 			:global(.site-search-input)::placeholder {
@@ -608,8 +617,8 @@ const currentPath = Astro.url.pathname;
 			:global(.site-search-input):focus,
 			:global(.site-search-input):focus-visible {
 				outline: none;
-				border-color: var(--color-brand) !important;
-				box-shadow: 0 0 0 3px var(--color-brand-ring);
+				border-color: var(--color-rule-strong) !important;
+				box-shadow: none;
 			}
 
 			:global(.site-search-results) {
@@ -619,9 +628,8 @@ const currentPath = Astro.url.pathname;
 				width: min(420px, 90vw);
 				margin-top: var(--spacing-2);
 				background: var(--color-bg);
-				border: 1px solid var(--color-border);
-				border-radius: var(--radius-lg);
-				box-shadow: var(--shadow-lg);
+				border: 1px solid var(--color-rule-strong);
+				border-radius: var(--radius);
 				max-height: 420px;
 				overflow-y: auto;
 				z-index: 1000;
@@ -651,19 +659,20 @@ const currentPath = Astro.url.pathname;
 			:global(.site-search-result):hover,
 			:global(.site-search-result):focus,
 			:global(.site-search-result.focused) {
-				background: var(--color-surface);
+				background: var(--color-bg-subtle);
 				outline: none;
 			}
 
 			:global(.site-search-result .emdash-live-search-result-title) {
 				display: block;
-				font-weight: 600;
+				font-weight: 700;
 				font-size: var(--font-size-sm);
 			}
 
 			:global(.site-search-result .emdash-live-search-result-collection) {
 				display: block;
-				font-size: var(--font-size-xs);
+				font-family: var(--font-mono);
+				font-size: 0.68rem;
 				color: var(--color-muted);
 				text-transform: uppercase;
 				letter-spacing: var(--tracking-wide);
@@ -679,25 +688,27 @@ const currentPath = Astro.url.pathname;
 			}
 
 			:global(.site-search-result .emdash-live-search-result-snippet mark) {
-				font-weight: 600;
+				font-weight: 700;
 				color: var(--color-text);
-				background: var(--color-brand-ring);
+				background: transparent;
+				text-decoration: underline;
+				text-decoration-color: var(--color-brand);
 			}
 
 			main {
-				min-height: calc(100vh - var(--nav-height) - 300px);
+				min-height: calc(100vh - 300px);
 			}
 
-			/* Footer */
+			/* ---- Footer ---------------------------------------------------- */
 			.site-footer {
-				background: var(--color-bg-subtle);
-				border-top: 1px solid var(--color-border-subtle);
+				border-top: 1px solid var(--color-rule-strong);
+				margin-top: var(--spacing-16);
 			}
 
 			.footer-inner {
 				max-width: var(--wide-width);
 				margin: 0 auto;
-				padding: var(--spacing-16) var(--spacing-6) var(--spacing-8);
+				padding: var(--spacing-12) var(--spacing-6) var(--spacing-8);
 			}
 
 			.footer-grid {
@@ -708,7 +719,7 @@ const currentPath = Astro.url.pathname;
 			}
 
 			.footer-brand {
-				max-width: 300px;
+				max-width: 320px;
 			}
 
 			.footer-logo {
@@ -717,27 +728,32 @@ const currentPath = Astro.url.pathname;
 			}
 
 			.footer-logo-img {
-				height: 34px;
+				height: 32px;
 				width: auto;
 			}
 
 			.footer-tagline {
 				margin-top: var(--spacing-4);
 				font-size: var(--font-size-sm);
-				color: var(--color-muted);
-				line-height: var(--leading-relaxed);
+				color: var(--color-text-secondary);
+				line-height: 1.8;
 			}
 
 			.footer-nav {
 				min-width: 0;
 			}
 
-			.footer-heading {
-				font-size: var(--font-size-xs);
-				font-weight: 700;
+			.footer-heading,
+			.footer-widgets-section :global(.widget__title) {
+				font-family: var(--font-mono);
+				font-size: 0.7rem;
+				font-weight: 500;
 				letter-spacing: var(--tracking-wider);
+				text-transform: uppercase;
 				color: var(--color-muted);
 				margin-bottom: var(--spacing-4);
+				padding-bottom: var(--spacing-2);
+				border-bottom: 1px solid var(--color-border-subtle);
 			}
 
 			.footer-links {
@@ -749,30 +765,19 @@ const currentPath = Astro.url.pathname;
 			}
 
 			.footer-links a {
-				color: var(--color-text-secondary);
+				color: var(--color-text);
 				text-decoration: none;
 				font-size: var(--font-size-sm);
-				transition: color var(--transition-fast);
 			}
 
 			.footer-links a:hover {
-				color: var(--color-brand);
+				text-decoration: underline;
+				text-underline-offset: 3px;
+				text-decoration-color: var(--color-brand);
 			}
 
 			.footer-widgets-section :global(.widget-area) {
 				display: block;
-			}
-
-			.footer-widgets-section :global(.widget) {
-				color: var(--color-text-secondary);
-			}
-
-			.footer-widgets-section :global(.widget__title) {
-				font-size: var(--font-size-xs);
-				font-weight: 700;
-				letter-spacing: var(--tracking-wider);
-				color: var(--color-muted);
-				margin-bottom: var(--spacing-4);
 			}
 
 			.footer-widgets-section :global(.widget__content) {
@@ -786,9 +791,11 @@ const currentPath = Astro.url.pathname;
 				justify-content: space-between;
 				align-items: center;
 				gap: var(--spacing-4);
-				padding-top: var(--spacing-6);
+				padding-top: var(--spacing-5);
 				border-top: 1px solid var(--color-border);
-				font-size: var(--font-size-sm);
+				font-family: var(--font-mono);
+				font-size: 0.7rem;
+				letter-spacing: 0.04em;
 				color: var(--color-muted);
 			}
 
@@ -797,12 +804,12 @@ const currentPath = Astro.url.pathname;
 			}
 
 			@media (max-width: 1000px) {
-				.nav {
-					gap: var(--spacing-4);
-				}
-
 				.site-search {
 					--search-input-width: 150px;
+				}
+
+				.masthead-tagline {
+					display: none;
 				}
 			}
 
@@ -819,47 +826,31 @@ const currentPath = Astro.url.pathname;
 			}
 
 			@media (max-width: 760px) {
-				.site-header {
-					position: relative;
-				}
-
-				.nav {
-					display: grid;
-					grid-template-columns: minmax(0, 1fr) auto;
-					align-items: center;
-					height: auto;
-					column-gap: var(--spacing-3);
-					row-gap: var(--spacing-3);
-					padding: var(--spacing-3) var(--spacing-4);
-				}
-
-				.site-title {
-					grid-column: 1;
-					grid-row: 1;
+				.masthead {
+					padding: var(--spacing-4) var(--spacing-4) var(--spacing-3);
 				}
 
 				.site-logo-img {
-					height: 34px;
-				}
-
-				.nav-right {
-					grid-column: 2;
-					grid-row: 1;
-					margin-inline-start: 0;
+					height: 36px;
 				}
 
 				.site-search {
 					display: none;
 				}
 
+				.nav {
+					padding: 0 var(--spacing-4);
+				}
+
 				.nav-links {
-					grid-column: 1 / -1;
-					grid-row: 2;
 					overflow-x: auto;
 					scrollbar-width: none;
 					-webkit-overflow-scrolling: touch;
-					margin: 0 calc(-1 * var(--spacing-4));
-					padding: 0 var(--spacing-4);
+				}
+
+				.nav-links a {
+					margin-right: var(--spacing-5);
+					padding: 0.6rem 0;
 				}
 
 				.nav-links::-webkit-scrollbar {
