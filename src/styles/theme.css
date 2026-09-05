@@ -40,8 +40,10 @@
 		system-ui, sans-serif;
 	--font-heading: var(--font-body);
 	--font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+	/* Condensed Latin display face: big numerals, English category words */
+	--font-display: "Barlow Condensed", "Arial Narrow", "Noto Sans JP", sans-serif;
 	--font-weight-heading: 700;
-	--font-weight-display: 700;
+	--font-weight-display: 900;
 
 	--tracking-tight: 0;
 	--tracking-snug: 0;
@@ -235,8 +237,15 @@ body {
 .row-item .row-thumb {
 	aspect-ratio: 16 / 10;
 	overflow: hidden;
-	border-radius: var(--radius);
+	border-radius: 0;
+	border: 1px solid var(--color-rule-strong);
 	background: var(--color-surface);
+	transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.row-item:hover .row-thumb {
+	box-shadow: 5px 5px 0 0 var(--color-brand);
+	transform: translate(-2px, -2px);
 }
 
 .row-item .row-thumb img {
@@ -293,6 +302,95 @@ body {
 	.row-item .row-excerpt {
 		display: none;
 	}
+}
+
+/* ---- Display devices (the "designed" layer) ------------------------ */
+
+/* Condensed uppercase Latin word: NEWS / LATEST / 01 */
+.display {
+	font-family: var(--font-display);
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	line-height: 0.9;
+}
+
+/* Giant hollow word used as a backdrop behind archive titles and the footer */
+.outline-word {
+	font-family: var(--font-display);
+	font-weight: 800;
+	text-transform: uppercase;
+	line-height: 0.85;
+	letter-spacing: -0.01em;
+	color: transparent;
+	-webkit-text-stroke: 1px var(--color-border);
+	user-select: none;
+	pointer-events: none;
+	white-space: nowrap;
+}
+
+/* Print-poster image frame: hairline border + hard ink offset block */
+.frame-ink {
+	position: relative;
+	border: 1px solid var(--color-rule-strong);
+	border-radius: 0;
+	box-shadow: 8px 8px 0 0 var(--color-rule-strong);
+	background: var(--color-surface);
+	overflow: hidden;
+}
+
+.frame-ink--brand {
+	box-shadow: 8px 8px 0 0 var(--color-brand);
+}
+
+/* Solid magenta label block */
+.tag-block {
+	display: inline-block;
+	padding: 0.2em 0.55em 0.15em;
+	background: var(--color-brand);
+	color: #fff;
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: 0.9rem;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	line-height: 1.2;
+	text-decoration: none;
+}
+
+.tag-block:hover {
+	background: var(--color-ink-fill);
+	color: var(--color-on-ink);
+}
+
+/* Section head gains a big faint English word on the right */
+.section-head .section-word {
+	font-family: var(--font-display);
+	font-weight: 800;
+	font-size: 2.4rem;
+	line-height: 0.8;
+	text-transform: uppercase;
+	color: var(--color-border);
+	letter-spacing: 0;
+	margin-inline-start: auto;
+	margin-inline-end: var(--spacing-4);
+	transform: translateY(0.12em);
+}
+
+@media (max-width: 600px) {
+	.section-head .section-word {
+		font-size: 1.6rem;
+	}
+}
+
+/* Row numbers become condensed numerals */
+.row-item .row-no {
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: 1.05rem;
+	line-height: 1;
+	color: var(--color-brand);
+	letter-spacing: 0;
 }
 
 /*
