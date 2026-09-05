@@ -64,8 +64,30 @@ export function categoryHref(categorySlug: string): string {
 	return `/${categorySlug}/`;
 }
 
+/**
+ * Some WordPress-imported tags (e.g. 初心者向け) have their slug stored
+ * already percent-encoded ("%e5%88%9d…"). Encoding that again would produce a
+ * double-encoded URL that 404s, so a slug that already looks encoded is used
+ * verbatim.
+ */
+const PERCENT_ENCODED = /%[0-9a-f]{2}/i;
+
+export function tagPath(tagSlug: string): string {
+	return PERCENT_ENCODED.test(tagSlug) ? tagSlug : encodeURIComponent(tagSlug);
+}
+
 export function tagHref(tagSlug: string): string {
-	return `/tag/${encodeURIComponent(tagSlug)}/`;
+	return `/tag/${tagPath(tagSlug)}/`;
+}
+
+/**
+ * Slug values to try when resolving a /tag/{param} URL: the decoded param
+ * itself, plus the lowercase/uppercase percent-encoded forms in case the term
+ * is one of the encoded-slug imports.
+ */
+export function tagSlugCandidates(param: string): string[] {
+	const enc = encodeURIComponent(param);
+	return [...new Set([param, enc.toLowerCase(), enc])];
 }
 
 export function pageHref(pageSlug: string): string {
