@@ -17,6 +17,7 @@ import ContentImage from "../../components/ContentImage.astro";
 import ContentEmbed from "../../components/ContentEmbed.astro";
 import ContentHtml from "../../components/ContentHtml.astro";
 import { fallbackDescription } from "../../utils/description";
+import { ogImageUrl } from "../../utils/media";
 import Base from "../../layouts/Base.astro";
 import PostCard from "../../components/PostCard.astro";
 import { getReadingTime } from "../../utils/reading-time";
@@ -70,7 +71,8 @@ function getImageUrl(img: unknown): string | undefined {
 		(typeof image.id === "string" ? image.id : undefined);
 	return storageKey ? `${origin}/_emdash/api/media/file/${storageKey}` : undefined;
 }
-const featuredImageUrl = getImageUrl(post.data.featured_image);
+const featuredOg = ogImageUrl(post.data.featured_image as never);
+const featuredImageUrl = featuredOg ? `${origin}${featuredOg}` : getImageUrl(post.data.featured_image);
 
 const seo = getSeoMeta(post, {
 	siteTitle,
