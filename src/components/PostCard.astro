@@ -14,6 +14,10 @@ interface Props {
 	tags?: Array<{ slug: string; label: string }>;
 	/** Render the title as h3 (when the card sits under an h2 section title) */
 	headingLevel?: "h2" | "h3";
+	/** "card": image on top (grids). "row": thumbnail left, ruled list (archives). */
+	variant?: "card" | "row";
+	/** Running number shown in the kicker (row variant) */
+	index?: number;
 	eager?: boolean;
 }
 
@@ -27,173 +31,170 @@ const {
 	category,
 	tags,
 	headingLevel = "h3",
+	variant = "card",
+	index,
 } = Astro.props;
 
 const Heading = headingLevel;
 const formattedDate = formatDateJa(date);
+const shownTags = (tags ?? []).slice(0, 3);
 ---
 
-<article class="post-card">
-	<a href={href} class="card-link">
-		{
-			featuredImage ? (
-				<div class="card-image">
-					<Image image={featuredImage} />
-				</div>
-			) : (
-				<div class="card-placeholder" aria-hidden="true">
-					<span>永住地</span>
-				</div>
-			)
-		}
-		<div class="card-body">
-			<div class="card-meta">
-				{
-					category && (
-						<span class:list={["cat-chip", `cat-chip--${category.slug}`]}>
-							{category.label}
-						</span>
-					)
-				}
+{
+	variant === "row" ? (
+		<article class="row-item">
+			<a href={href} class="row-thumb" aria-hidden="true" tabindex="-1">
+				{featuredImage ? <Image image={featuredImage} /> : <span class="thumb-blank" />}
+			</a>
+			<div class="row-body">
+				<p class="meta row-kicker">
+					{typeof index === "number" && <span class="row-no">{String(index).padStart(2, "0")}</span>}
+					{category && <a href={`/${category.slug}`} class="cat-chip">{category.label}</a>}
+					{formattedDate && <time datetime={isoDate(date)}>{formattedDate}</time>}
+					{readingTime && <span>{readingTime} min</span>}
+				</p>
+				<Heading class="row-title">
+					<a href={href}>{title}</a>
+				</Heading>
+				{excerpt && <p class="row-excerpt">{excerpt}</p>}
+				{shownTags.length > 0 && (
+					<p class="row-meta row-tags">
+						{shownTags.map((t) => (
+							<a href={`/tag/${encodeURIComponent(t.slug)}`} class="tag-pill">
+								{t.label}
+							</a>
+						))}
+					</p>
+				)}
+			</div>
+		</article>
+	) : (
+		<article class="post-card">
+			<a href={href} class="card-image" aria-hidden="true" tabindex="-1">
+				{featuredImage ? <Image image={featuredImage} /> : <span class="thumb-blank" />}
+			</a>
+			<p class="meta card-kicker">
+				{category && <a href={`/${category.slug}`} class="cat-chip">{category.label}</a>}
 				{formattedDate && <time datetime={isoDate(date)}>{formattedDate}</time>}
-				{readingTime && <span class="card-read">約{readingTime}分</span>}
-			</div>
-			<Heading class="card-title">{title}</Heading>
+				{readingTime && <span>{readingTime} min</span>}
+			</p>
+			<Heading class="card-title">
+				<a href={href}>{title}</a>
+			</Heading>
 			{excerpt && <p class="card-excerpt">{excerpt}</p>}
-		</div>
-	</a>
-	{
-		tags && tags.length > 0 && (
-			<div class="card-tags">
-				{tags.slice(0, 3).map((tag) => (
-					<a href={`/tag/${tag.slug}`} class="tag-pill">
-						{tag.label}
-					</a>
-				))}
-			</div>
-		)
-	}
-</article>
+			{shownTags.length > 0 && (
+				<p class="card-tags">
+					{shownTags.map((t) => (
+						<a href={`/tag/${encodeURIComponent(t.slug)}`} class="tag-pill">
+							{t.label}
+						</a>
+					))}
+				</p>
+			)}
+		</article>
+	)
+}
 
 <style>
-	.post-card {
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-	}
-
-	.card-link {
+	/* ---- Shared ---- */
+	.thumb-blank {
 		display: block;
-		text-decoration: none;
-		color: inherit;
-		flex: 1;
-	}
-
-	.card-image,
-	.card-placeholder {
-		position: relative;
-		aspect-ratio: 16 / 9;
-		overflow: hidden;
-		border-radius: var(--radius-lg);
-		background: var(--color-surface);
-		margin-bottom: var(--spacing-4);
-		border: 1px solid var(--color-border-subtle);
-		transition:
-			box-shadow var(--transition-base),
-			transform var(--transition-base);
-	}
-
-	.card-image img {
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
-		transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
-	}
-
-	.card-link:hover .card-image,
-	.card-link:hover .card-placeholder {
-		box-shadow: var(--shadow-card);
-		transform: translateY(-2px);
-	}
-
-	.card-link:hover .card-image img {
-		transform: scale(1.04);
-	}
-
-	/* Glitch edge on hover */
-	.card-image::after {
-		content: "";
-		position: absolute;
-		inset: auto 0 0 0;
-		height: 3px;
-		background: var(--gradient-glitch);
-		transform: scaleX(0);
-		transform-origin: left;
-		transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
-	}
-
-	.card-link:hover .card-image::after {
-		transform: scaleX(1);
-	}
-
-	.card-placeholder {
-		display: grid;
-		place-items: center;
-		color: var(--color-muted);
-		font-weight: 800;
-		font-size: var(--font-size-2xl);
-		letter-spacing: 0.2em;
 		background:
-			radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--color-brand) 14%, transparent), transparent 55%),
-			radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 55%),
-			var(--color-surface);
+			repeating-linear-gradient(
+				-45deg,
+				transparent 0 6px,
+				var(--color-border-subtle) 6px 7px
+			),
+			var(--color-bg-subtle);
 	}
 
-	.card-meta {
+	.card-kicker,
+	.row-kicker {
 		display: flex;
-		align-items: center;
 		flex-wrap: wrap;
-		gap: var(--spacing-2) var(--spacing-3);
-		font-size: var(--font-size-xs);
-		color: var(--color-muted);
+		gap: 0 var(--spacing-3);
 		margin-bottom: var(--spacing-2);
 	}
 
-	.card-meta time,
-	.card-read {
-		white-space: nowrap;
+	.row-no {
+		color: var(--color-text);
+		font-weight: 500;
+	}
+
+	.card-kicker time,
+	.row-kicker time {
+		color: var(--color-muted);
+	}
+
+	/* ---- Card variant ---- */
+	.post-card {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.card-image {
+		display: block;
+		aspect-ratio: 16 / 10;
+		overflow: hidden;
+		border-radius: var(--radius);
+		background: var(--color-surface);
+		margin-bottom: var(--spacing-4);
+	}
+
+	.card-image :global(img) {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
 
 	.card-title {
 		font-size: var(--font-size-lg);
-		font-weight: var(--font-weight-heading);
-		line-height: var(--leading-snug);
+		font-weight: 700;
+		line-height: 1.45;
 		margin-bottom: var(--spacing-2);
-		transition: color var(--transition-fast);
+	}
+
+	.card-title a,
+	.row-title a {
+		color: var(--color-text);
+		text-decoration: none;
+	}
+
+	.card-title a:hover,
+	.row-title a:hover {
+		text-decoration: underline;
+		text-decoration-color: var(--color-brand);
+		text-decoration-thickness: 2px;
+		text-underline-offset: 4px;
+	}
+
+	.card-excerpt {
+		font-size: var(--font-size-sm);
+		line-height: 1.75;
+		color: var(--color-text-secondary);
 		display: -webkit-box;
 		-webkit-line-clamp: 3;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}
 
-	.card-link:hover .card-title {
-		color: var(--color-brand);
-	}
-
-	.card-excerpt {
-		font-size: var(--font-size-sm);
-		line-height: var(--leading-relaxed);
-		color: var(--color-text-secondary);
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
-
-	.card-tags {
+	.card-tags,
+	.row-tags {
 		display: flex;
 		flex-wrap: wrap;
-		gap: var(--spacing-2);
+		gap: 0 var(--spacing-3);
 		margin-top: var(--spacing-3);
+	}
+
+	/* ---- Row variant: layout lives in theme.css (.row-item) ---- */
+	.row-thumb {
+		display: block;
+	}
+
+	.row-body {
+		min-width: 0;
 	}
 </style>
