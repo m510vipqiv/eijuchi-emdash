@@ -7,10 +7,10 @@
  * other single-segment path is treated as a static page (/privacy, /contact).
  */
 export const CATEGORIES = [
-	{ slug: "news", label: "ニュース" },
-	{ slug: "guide", label: "攻略・ガイド" },
-	{ slug: "column", label: "コラム" },
-	{ slug: "review", label: "レビュー" },
+	{ slug: "news", label: "ニュース", en: "News" },
+	{ slug: "guide", label: "攻略・ガイド", en: "Guide" },
+	{ slug: "column", label: "コラム", en: "Column" },
+	{ slug: "review", label: "レビュー", en: "Review" },
 ] as const;
 
 export type CategorySlug = (typeof CATEGORIES)[number]["slug"];
@@ -24,6 +24,12 @@ export function isCategorySlug(slug: string | undefined | null): slug is Categor
 export function categoryLabel(slug: string | undefined | null): string {
 	const hit = CATEGORIES.find((c) => c.slug === slug);
 	return hit ? hit.label : slug ?? "";
+}
+
+/** English display word for the category (masthead, archive headers). */
+export function categoryEn(slug: string | undefined | null): string {
+	const hit = CATEGORIES.find((c) => c.slug === slug);
+	return hit ? hit.en : (slug ?? "").toUpperCase();
 }
 
 /** Minimal shape of a taxonomy term as returned by getTermsForEntries / getEntryTerms */
