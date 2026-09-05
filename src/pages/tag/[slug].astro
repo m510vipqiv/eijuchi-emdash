@@ -69,7 +69,8 @@ const breadcrumbJsonLd = {
 				<span aria-hidden="true">/</span>
 				<span>{term.label}</span>
 			</nav>
-			<p class="kicker">Tag</p>
+			<p class="outline-word archive-word" aria-hidden="true">Tag</p>
+			<p class="kicker"><span class="tag-block">Tag</span></p>
 			<h1 class="archive-title">#{term.label}</h1>
 			<p class="meta archive-count">{count} articles</p>
 		</header>
@@ -138,19 +139,33 @@ const breadcrumbJsonLd = {
 	}
 
 	.archive-header {
+		position: relative;
 		margin-bottom: var(--spacing-10);
 		padding-bottom: var(--spacing-6);
 		border-bottom: 2px solid var(--color-rule-strong);
+		overflow: hidden;
+	}
+
+	.archive-word {
+		position: absolute;
+		right: -0.03em;
+		bottom: 0.05em;
+		font-size: clamp(5rem, 16vw, 11rem);
+	}
+
+	.archive-header > :not(.archive-word) {
+		position: relative;
 	}
 
 	.archive-header .kicker {
-		margin-bottom: var(--spacing-2);
+		margin-bottom: var(--spacing-3);
 	}
 
 	.archive-title {
-		font-size: var(--font-size-4xl);
-		font-weight: 700;
-		line-height: 1.2;
+		font-size: clamp(2.2rem, 5vw, 3.2rem);
+		font-weight: 900;
+		line-height: 1.15;
+		letter-spacing: -0.01em;
 		margin-bottom: var(--spacing-3);
 	}
 

@@ -26,7 +26,8 @@ function weight(count: number | undefined) {
 <Base title="タグ一覧" description={`${siteTitle}で扱っているゲームタイトル・トピックのタグ一覧。`} canonical={`${origin}/tags`}>
 	<section class="tags-page">
 		<header class="page-header">
-			<p class="kicker">Tags</p>
+			<p class="outline-word page-word" aria-hidden="true">Tags</p>
+			<p class="kicker"><span class="tag-block">Tags</span></p>
 			<h1 class="page-title">タグ一覧</h1>
 			<p class="meta page-description">{terms.length} tags</p>
 		</header>
@@ -58,19 +59,33 @@ function weight(count: number | undefined) {
 	}
 
 	.page-header {
+		position: relative;
 		margin-bottom: var(--spacing-10);
 		padding-bottom: var(--spacing-6);
 		border-bottom: 2px solid var(--color-rule-strong);
+		overflow: hidden;
+	}
+
+	.page-word {
+		position: absolute;
+		right: -0.03em;
+		bottom: 0.05em;
+		font-size: clamp(5rem, 16vw, 11rem);
+	}
+
+	.page-header > :not(.page-word) {
+		position: relative;
 	}
 
 	.page-header .kicker {
-		margin-bottom: var(--spacing-2);
+		margin-bottom: var(--spacing-3);
 	}
 
 	.page-title {
-		font-size: var(--font-size-4xl);
-		font-weight: 700;
-		line-height: 1.2;
+		font-size: clamp(2.4rem, 5vw, 3.4rem);
+		font-weight: 900;
+		line-height: 1.15;
+		letter-spacing: -0.01em;
 		margin-bottom: var(--spacing-3);
 	}
 
