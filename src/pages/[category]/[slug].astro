@@ -19,6 +19,7 @@ import { resolveBlogSiteIdentity, siteOrigin, LOGO_LIGHT_URL } from "../../utils
 import {
 	isCategorySlug,
 	categoryLabel,
+	categoryEn,
 	primaryCategory,
 	postHref,
 	formatDateJa,
@@ -159,7 +160,8 @@ const breadcrumbJsonLd = {
 					<a href={`/${category}`}>{catLabel}</a>
 				</nav>
 				<p class="kicker article-kicker">
-					<a href={`/${category}`}>{catLabel}</a>
+					<a href={`/${category}`} class="tag-block">{categoryEn(category)}</a>
+					<a href={`/${category}`} class="article-kicker-ja">{catLabel}</a>
 				</p>
 				<h1 class="article-title" {...post.edit.title}>{post.data.title}</h1>
 				{post.data.excerpt && <p class="article-excerpt" {...post.edit.excerpt}>{post.data.excerpt}</p>}
@@ -178,7 +180,7 @@ const breadcrumbJsonLd = {
 
 			{
 				post.data.featured_image && (
-					<div class="article-hero" {...post.edit.featured_image}>
+					<div class="article-hero frame-ink" {...post.edit.featured_image}>
 						<Image image={post.data.featured_image} />
 					</div>
 				)
@@ -382,19 +384,27 @@ const breadcrumbJsonLd = {
 	}
 
 	.article-kicker {
-		margin-bottom: var(--spacing-3);
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-3);
+		margin-bottom: var(--spacing-4);
 	}
 
-	.article-kicker a {
-		color: var(--color-brand);
+	.article-kicker-ja {
+		color: var(--color-text);
 		text-decoration: none;
 		text-transform: none;
 	}
 
+	.article-kicker-ja:hover {
+		color: var(--color-brand);
+	}
+
 	.article-title {
-		font-size: clamp(1.7rem, 3.6vw, 2.5rem);
-		font-weight: 700;
-		line-height: 1.35;
+		font-size: clamp(1.8rem, 3.8vw, 2.7rem);
+		font-weight: 900;
+		line-height: 1.3;
+		letter-spacing: -0.01em;
 		margin-bottom: var(--spacing-4);
 	}
 
@@ -416,9 +426,6 @@ const breadcrumbJsonLd = {
 	.article-hero {
 		max-width: 1000px;
 		margin: 0 auto var(--spacing-12);
-		border-radius: var(--radius);
-		overflow: hidden;
-		background: var(--color-surface);
 	}
 
 	.article-hero img {
@@ -444,6 +451,7 @@ const breadcrumbJsonLd = {
 	.article-content {
 		font-size: 1.0625rem;
 		line-height: 1.95;
+		counter-reset: section;
 	}
 
 	.article-content :global(p) {
@@ -458,6 +466,19 @@ const breadcrumbJsonLd = {
 		padding-bottom: 0.4em;
 		border-bottom: 1px solid var(--color-rule-strong);
 		scroll-margin-top: var(--spacing-6);
+		counter-increment: section;
+	}
+
+	.article-content :global(h2)::before {
+		content: counter(section, decimal-leading-zero);
+		display: block;
+		font-family: var(--font-display);
+		font-weight: 800;
+		font-size: 1.6rem;
+		line-height: 1;
+		color: var(--color-brand);
+		letter-spacing: 0.02em;
+		margin-bottom: 0.3em;
 	}
 
 	.article-content :global(h3) {
