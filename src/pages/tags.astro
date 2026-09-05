@@ -26,8 +26,9 @@ function weight(count: number | undefined) {
 <Base title="タグ一覧" description={`${siteTitle}で扱っているゲームタイトル・トピックのタグ一覧。`} canonical={`${origin}/tags`}>
 	<section class="tags-page">
 		<header class="page-header">
-			<h1 class="page-title"><span class="glitch-bar" aria-hidden="true"></span>タグ一覧</h1>
-			<p class="page-description">{terms.length}件のタグ</p>
+			<p class="kicker">Tags</p>
+			<h1 class="page-title">タグ一覧</h1>
+			<p class="meta page-description">{terms.length} tags</p>
 		</header>
 
 		{
@@ -37,9 +38,8 @@ function weight(count: number | undefined) {
 				<ul class="tag-cloud">
 					{terms.map((t) => (
 						<li>
-							<a href={`/tag/${t.slug}`} class:list={["tag-item", `tag-item--${weight(t.count)}`]}>
-								<span class="tag-hash" aria-hidden="true">#</span>
-								{t.label}
+							<a href={`/tag/${encodeURIComponent(t.slug)}`} class:list={["tag-item", `tag-item--${weight(t.count)}`]}>
+								<span class="tag-label">{t.label}</span>
 								<span class="tag-count">{t.count}</span>
 							</a>
 						</li>
@@ -52,91 +52,98 @@ function weight(count: number | undefined) {
 
 <style>
 	.tags-page {
-		max-width: 900px;
+		max-width: 860px;
 		margin: 0 auto;
-		padding: var(--spacing-10) var(--spacing-6) var(--spacing-20);
+		padding: var(--spacing-10) var(--spacing-6) var(--spacing-16);
 	}
 
 	.page-header {
 		margin-bottom: var(--spacing-10);
+		padding-bottom: var(--spacing-6);
+		border-bottom: 2px solid var(--color-rule-strong);
 	}
 
-	.page-title {
-		display: flex;
-		align-items: center;
-		gap: var(--spacing-3);
-		font-size: var(--font-size-3xl);
-		font-weight: var(--font-weight-display);
+	.page-header .kicker {
 		margin-bottom: var(--spacing-2);
 	}
 
-	.page-description,
+	.page-title {
+		font-size: var(--font-size-4xl);
+		font-weight: 700;
+		line-height: 1.2;
+		margin-bottom: var(--spacing-3);
+	}
+
 	.empty {
 		color: var(--color-muted);
 	}
 
+	/* Two/three-column ruled index, like a magazine's back-page index */
 	.tag-cloud {
 		list-style: none;
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--spacing-3);
+		columns: 3;
+		column-gap: var(--spacing-10);
+	}
+
+	.tag-cloud li {
+		break-inside: avoid;
 	}
 
 	.tag-item {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.3em;
-		padding: 0.4em 0.9em;
-		border-radius: 999px;
-		border: 1px solid var(--color-border);
-		background: var(--color-bg);
+		display: flex;
+		align-items: baseline;
+		gap: var(--spacing-3);
+		padding: var(--spacing-2) 0;
+		border-bottom: 1px solid var(--color-border-subtle);
 		color: var(--color-text);
 		text-decoration: none;
 		font-size: var(--font-size-sm);
-		transition:
-			border-color var(--transition-fast),
-			color var(--transition-fast),
-			transform var(--transition-fast),
-			box-shadow var(--transition-fast);
 	}
 
-	.tag-item:hover {
-		border-color: var(--color-brand);
-		color: var(--color-brand);
-		transform: translateY(-1px);
-		box-shadow: var(--shadow-sm);
+	.tag-label {
+		flex: 1;
+		min-width: 0;
 	}
 
-	.tag-item--xl {
-		font-size: var(--font-size-xl);
+	.tag-item:hover .tag-label {
+		text-decoration: underline;
+		text-decoration-color: var(--color-brand);
+		text-underline-offset: 3px;
+	}
+
+	.tag-item--xl .tag-label,
+	.tag-item--lg .tag-label {
 		font-weight: 700;
 	}
 
-	.tag-item--lg {
-		font-size: var(--font-size-lg);
-		font-weight: 600;
-	}
-
-	.tag-item--md {
+	.tag-item--xl .tag-label {
 		font-size: var(--font-size-base);
 	}
 
-	.tag-hash {
-		color: var(--color-accent);
-		font-weight: 700;
+	.tag-count {
+		font-family: var(--font-mono);
+		font-size: 0.72rem;
+		color: var(--color-muted);
+		font-feature-settings: "tnum" 1;
 	}
 
-	.tag-count {
-		font-size: 0.75em;
-		color: var(--color-muted);
-		background: var(--color-surface);
-		padding: 0 0.5em;
-		border-radius: 999px;
+	@media (max-width: 800px) {
+		.tag-cloud {
+			columns: 2;
+		}
 	}
 
 	@media (max-width: 600px) {
 		.tags-page {
 			padding: var(--spacing-6) var(--spacing-4) var(--spacing-12);
+		}
+
+		.page-title {
+			font-size: var(--font-size-3xl);
+		}
+
+		.tag-cloud {
+			columns: 1;
 		}
 	}
 </style>

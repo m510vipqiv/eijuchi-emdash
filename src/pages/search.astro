@@ -15,7 +15,10 @@ const { items: results } = query
 
 <Base title={query ? `「${query}」の検索結果` : "検索"} description="サイト内検索" robots="noindex, follow">
 	<section class="search-page">
-		<h1 class="search-title"><span class="glitch-bar" aria-hidden="true"></span>サイト内検索</h1>
+		<header class="page-header">
+			<p class="kicker">Search</p>
+			<h1 class="search-title">サイト内検索</h1>
+		</header>
 
 		<form method="get" action="/search" class="search-form" role="search">
 			<input
@@ -66,12 +69,20 @@ const { items: results } = query
 		padding: var(--spacing-10) var(--spacing-6) var(--spacing-20);
 	}
 
+	.page-header {
+		margin-bottom: var(--spacing-8);
+		padding-bottom: var(--spacing-6);
+		border-bottom: 2px solid var(--color-rule-strong);
+	}
+
+	.page-header .kicker {
+		margin-bottom: var(--spacing-2);
+	}
+
 	.search-title {
-		display: flex;
-		align-items: center;
-		gap: var(--spacing-3);
-		font-size: var(--font-size-2xl);
-		margin-bottom: var(--spacing-6);
+		font-size: var(--font-size-4xl);
+		font-weight: 700;
+		line-height: 1.2;
 	}
 
 	.search-form {
@@ -86,31 +97,31 @@ const { items: results } = query
 		font-family: var(--font-body);
 		font-size: var(--font-size-base);
 		border: 1px solid var(--color-border);
-		border-radius: 999px;
-		background: var(--color-bg);
+		border-radius: var(--radius);
+		background: transparent;
 		color: var(--color-text);
 	}
 
 	.search-input:focus {
 		outline: none;
-		border-color: var(--color-brand);
-		box-shadow: 0 0 0 3px var(--color-brand-ring);
+		border-color: var(--color-rule-strong);
 	}
 
 	.search-button {
 		padding: var(--spacing-3) var(--spacing-6);
 		font-family: var(--font-body);
 		font-size: var(--font-size-base);
-		background: var(--color-brand);
-		color: var(--color-on-brand);
-		border: none;
-		border-radius: 999px;
+		background: var(--color-ink-fill);
+		color: var(--color-on-ink);
+		border: 1px solid var(--color-ink-fill);
+		border-radius: var(--radius);
 		cursor: pointer;
-		font-weight: 600;
+		font-weight: 700;
 	}
 
 	.search-button:hover {
-		background: var(--color-brand-hover);
+		background: transparent;
+		color: var(--color-text);
 	}
 
 	.search-summary,
@@ -141,7 +152,7 @@ const { items: results } = query
 	}
 
 	.result-title {
-		font-size: var(--font-size-xl);
+		font-size: var(--font-size-lg);
 		font-weight: var(--font-weight-heading);
 		line-height: var(--leading-snug);
 		margin-bottom: var(--spacing-2);
@@ -159,10 +170,12 @@ const { items: results } = query
 	}
 
 	.result-snippet :global(mark) {
-		background: var(--color-brand-ring);
+		background: transparent;
 		color: inherit;
-		padding: 0 0.1em;
-		border-radius: 2px;
+		font-weight: 700;
+		text-decoration: underline;
+		text-decoration-color: var(--color-brand);
+		text-underline-offset: 3px;
 	}
 
 	@media (max-width: 600px) {
