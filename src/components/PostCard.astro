@@ -1,7 +1,7 @@
 ---
 import type { MediaValue } from "emdash";
 import { Image } from "emdash/ui";
-import { formatDateJa, isoDate } from "../utils/categories";
+import { formatDateJa, isoDate, categoryEn } from "../utils/categories";
 
 interface Props {
 	title: string;
@@ -37,6 +37,7 @@ const {
 
 const Heading = headingLevel;
 const formattedDate = formatDateJa(date);
+const catEn = category ? categoryEn(category.slug) : "";
 const shownTags = (tags ?? []).slice(0, 3);
 ---
 
@@ -49,7 +50,7 @@ const shownTags = (tags ?? []).slice(0, 3);
 			<div class="row-body">
 				<p class="meta row-kicker">
 					{typeof index === "number" && <span class="row-no">{String(index).padStart(2, "0")}</span>}
-					{category && <a href={`/${category.slug}`} class="cat-chip">{category.label}</a>}
+					{category && <a href={`/${category.slug}`} class="cat-word">{catEn}<span class="cat-ja">{category.label}</span></a>}
 					{formattedDate && <time datetime={isoDate(date)}>{formattedDate}</time>}
 					{readingTime && <span>{readingTime} min</span>}
 				</p>
@@ -74,7 +75,7 @@ const shownTags = (tags ?? []).slice(0, 3);
 				{featuredImage ? <Image image={featuredImage} /> : <span class="thumb-blank" />}
 			</a>
 			<p class="meta card-kicker">
-				{category && <a href={`/${category.slug}`} class="cat-chip">{category.label}</a>}
+				{category && <a href={`/${category.slug}`} class="cat-word">{catEn}<span class="cat-ja">{category.label}</span></a>}
 				{formattedDate && <time datetime={isoDate(date)}>{formattedDate}</time>}
 				{readingTime && <span>{readingTime} min</span>}
 			</p>
@@ -118,14 +119,34 @@ const shownTags = (tags ?? []).slice(0, 3);
 		margin-bottom: var(--spacing-2);
 	}
 
-	.row-no {
-		color: var(--color-text);
-		font-weight: 500;
-	}
-
 	.card-kicker time,
 	.row-kicker time {
 		color: var(--color-muted);
+	}
+
+	.cat-word {
+		font-family: var(--font-display);
+		font-weight: 700;
+		font-size: 1rem;
+		line-height: 1;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		color: var(--color-brand);
+		text-decoration: none;
+		align-self: baseline;
+	}
+
+	.cat-ja {
+		font-family: var(--font-body);
+		font-size: 0.68rem;
+		font-weight: 500;
+		letter-spacing: 0;
+		color: var(--color-muted);
+		margin-left: 0.4em;
+	}
+
+	.cat-word:hover {
+		color: var(--color-text);
 	}
 
 	/* ---- Card variant ---- */
@@ -139,9 +160,16 @@ const shownTags = (tags ?? []).slice(0, 3);
 		display: block;
 		aspect-ratio: 16 / 10;
 		overflow: hidden;
-		border-radius: var(--radius);
+		border-radius: 0;
+		border: 1px solid var(--color-rule-strong);
 		background: var(--color-surface);
 		margin-bottom: var(--spacing-4);
+		transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+	}
+
+	.post-card:hover .card-image {
+		box-shadow: 6px 6px 0 0 var(--color-brand);
+		transform: translate(-2px, -2px);
 	}
 
 	.card-image :global(img) {
