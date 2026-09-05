@@ -1,0 +1,74 @@
+---
+/**
+ * Portable Text `htmlBlock` override — imported WordPress "Custom HTML" blocks.
+ *
+ * EmDash's default only whitelists YouTube/Vimeo iframes, which silently dropped
+ * this archive's Steam store widgets, Twitch/bilibili players and left pasted
+ * tweets as unstyled quotes. sanitizeBodyHtml keeps those hosts; <script> is
+ * still stripped and the Twitter loader is attached page-wide instead.
+ */
+import { sanitizeBodyHtml } from "../utils/embeds";
+
+interface Props {
+	node: {
+		_type: "htmlBlock";
+		_key: string;
+		html?: string;
+	};
+}
+
+const { node } = Astro.props;
+const html = node?.html ? sanitizeBodyHtml(node.html) : "";
+---
+
+{html && <div class="body-html" set:html={html} />}
+
+<script src="../scripts/twitter-widgets.ts"></script>
+
+<style>
+	.body-html {
+		margin: 2em 0;
+	}
+
+	.body-html :global(iframe) {
+		display: block;
+		max-width: 100%;
+		margin: 0 auto;
+		border: 0;
+	}
+
+	/* Steam store widgets ship a fixed 646×190 box */
+	.body-html :global(iframe[src*="store.steampowered.com"]) {
+		width: 100%;
+		max-width: 646px;
+		height: 190px;
+	}
+
+	/* 16:9 players pasted with fixed pixel sizes */
+	.body-html :global(iframe[src*="youtube"]),
+	.body-html :global(iframe[src*="twitch.tv"]),
+	.body-html :global(iframe[src*="bilibili.com"]) {
+		width: 100%;
+		aspect-ratio: 16 / 9;
+		height: auto;
+		background: #000;
+	}
+
+	.body-html :global(blockquote.twitter-tweet) {
+		margin: 0 auto;
+		max-width: 550px;
+	}
+
+	.body-html :global(blockquote.twitter-tweet:not(.twitter-tweet-rendered)) {
+		border: 1px solid var(--color-rule-strong);
+		padding: var(--spacing-4) var(--spacing-5);
+		font-size: var(--font-size-sm);
+		font-style: normal;
+		background: var(--color-surface);
+	}
+
+	.body-html :global(img) {
+		max-width: 100%;
+		height: auto;
+	}
+</style>

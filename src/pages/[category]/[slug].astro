@@ -14,6 +14,8 @@ import {
 import { PortableText } from "emdash/ui";
 import MediaImg from "../../components/MediaImg.astro";
 import ContentImage from "../../components/ContentImage.astro";
+import ContentEmbed from "../../components/ContentEmbed.astro";
+import ContentHtml from "../../components/ContentHtml.astro";
 import { fallbackDescription } from "../../utils/description";
 import Base from "../../layouts/Base.astro";
 import PostCard from "../../components/PostCard.astro";
@@ -172,7 +174,7 @@ const breadcrumbJsonLd = {
 			<div class="article-grid">
 				<div class="article-main">
 					<div class="article-content">
-						<PortableText value={post.data.content} components={{ type: { image: ContentImage } }} />
+						<PortableText value={post.data.content} components={{ type: { image: ContentImage, embed: ContentEmbed, htmlBlock: ContentHtml } }} />
 					</div>
 
 					<footer class="article-footer">
