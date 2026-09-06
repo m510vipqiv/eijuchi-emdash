@@ -97,7 +97,11 @@ const ogImage = image ?? `${origin}${DEFAULT_OG_IMAGE_PATH}`;
 // tag on publish; the short max-age + long SWR covers everything else.
 // Editor / preview renders are opted out by EmDash's middleware.
 if (Astro.cache?.enabled && !Astro.locals.user && !Astro.url.searchParams.has("_edit")) {
-	Astro.cache.set({ maxAge: 600, swr: 86400 });
+	// 6h fresh + 7d stale-while-revalidate. EmDash purges the affected tags on
+	// publish, so a short maxAge only buys background re-renders (each one is a
+	// full D1 round trip — the 10-minute TTL was a large share of the reads
+	// that hit the D1 daily limit on 2026-09-06).
+	Astro.cache.set({ maxAge: 21600, swr: 604800 });
 }
 
 // Build public page context for plugin contributions
