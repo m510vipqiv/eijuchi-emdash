@@ -44,16 +44,23 @@ if (!category || !slug || !isCategorySlug(category)) {
 
 const { entry: post, cacheHint } = await getEmDashEntry("posts", slug);
 if (!post) return new Response(null, { status: 404 });
-if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 // Verify the URL category belongs to this post; otherwise 301 to its canonical category.
 const postCategories =
 	(post.data as any).terms?.category ?? (await getEntryTerms("posts", post.data.id, "category"));
 const hasCategory = postCategories.some((t: { slug: string }) => t.slug === category);
 if (!hasCategory) {
+	// primaryCategory() falls back to "news" for a post with no category term;
+	// only redirect when that actually changes the URL, otherwise a
+	// category-less post would 301 to itself forever.
 	const canonicalCat = primaryCategory(postCategories);
-	return Astro.redirect(postHref(canonicalCat, slug), 301);
+	if (canonicalCat !== category) {
+		return Astro.redirect(postHref(canonicalCat, slug), 301);
+	}
 }
+// Only the rendered page is cached (tagged with the entry), never a redirect —
+// a cached 301 would outlive a category change made in the admin.
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 const origin = siteOrigin(Astro.url);
 const path = postHref(category, slug);
