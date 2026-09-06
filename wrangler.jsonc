@@ -35,4 +35,6 @@
 	// Email Routing send binding (Email Service). Free plan: delivery only to the
 	// account's verified destination addresses — form notifications go to one.
 	"send_email": [{ "name": "EMAIL" }],
+	// Workers Logs (enabled in the dashboard 2026-09-07; kept here so builds don't reset it).
+	"observability": { "logs": { "enabled": true, "invocation_logs": true } },
 }
