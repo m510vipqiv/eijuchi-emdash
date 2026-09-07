@@ -152,12 +152,17 @@ const currentPath = Astro.url.pathname;
 			// Apply an explicit theme choice immediately to prevent flash.
 			// With no cookie, color-scheme: light dark follows the OS.
 			(function () {
-				var c = document.cookie;
-				var i = c.indexOf("theme=");
-				var theme = i >= 0 ? c.slice(i + 6).split(";")[0] : null;
-				if (theme === "dark" || theme === "light") {
-					document.documentElement.classList.add(theme);
+				var theme = null;
+				var m = document.cookie.match(/(?:^|;\s*)theme=(light|dark)(?:;|$)/);
+				if (m) theme = m[1];
+				if (!theme) {
+					// Safari caps JS-set cookies at 7 days; localStorage is the backup copy.
+					try {
+						var ls = localStorage.getItem("theme");
+						if (ls === "light" || ls === "dark") theme = ls;
+					} catch (e) {}
 				}
+				if (theme) document.documentElement.classList.add(theme);
 			})();
 		</script>
 		<!-- Google Tag Manager -->
@@ -337,6 +342,11 @@ const currentPath = Astro.url.pathname;
 				root.classList.remove("light", "dark");
 				root.classList.add(next);
 				setCookie("theme", next);
+				try {
+					localStorage.setItem("theme", next);
+				} catch {
+					/* storage blocked */
+				}
 			});
 
 			// Keep aria state in sync
