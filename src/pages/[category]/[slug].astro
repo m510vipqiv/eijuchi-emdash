@@ -18,6 +18,7 @@ import ContentEmbed from "../../components/ContentEmbed.astro";
 import ContentHtml from "../../components/ContentHtml.astro";
 import { fallbackDescription } from "../../utils/description";
 import { ogImageUrl } from "../../utils/media";
+import { hydrateBodyImageDims } from "../../utils/body-image-dims";
 import Base from "../../layouts/Base.astro";
 import PostCard from "../../components/PostCard.astro";
 import { getReadingTime } from "../../utils/reading-time";
@@ -128,6 +129,9 @@ const breadcrumbJsonLd = {
 		{ "@type": "ListItem", position: 3, name: post.data.title, item: `${origin}${path}` },
 	],
 };
+
+// Body images: fill in width/height from the media table so the browser reserves space (CLS)
+const bodyContent = await hydrateBodyImageDims(post.data.content);
 ---
 
 <Base
@@ -183,7 +187,7 @@ const breadcrumbJsonLd = {
 			<div class="article-grid">
 				<div class="article-main">
 					<div class="article-content">
-						<PortableText value={post.data.content} components={{ type: { image: ContentImage, embed: ContentEmbed, htmlBlock: ContentHtml } }} />
+						<PortableText value={bodyContent} components={{ type: { image: ContentImage, embed: ContentEmbed, htmlBlock: ContentHtml } }} />
 					</div>
 
 					<footer class="article-footer">
