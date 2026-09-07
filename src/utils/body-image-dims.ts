@@ -12,6 +12,30 @@
  */
 import { env } from "cloudflare:workers";
 import { MEDIA_PREFIX } from "./media";
+import wpMediaMap from "../../wp-media-map.json";
+
+/**
+ * WordPress URL -> EmDash media key. The importer migrated the *original*
+ * uploads (wp-media-map.json), but many post bodies still reference the
+ * old host and/or a WP-generated size variant (`foo-696x392.png`), which
+ * ContentImage then turns into a 404 `/_image?href=.../http://...` URL.
+ * Strip the size suffix and map the path back to the migrated original.
+ */
+const WP_UPLOADS_RE = /\/wp-content\/uploads\/(.+)$/;
+const wpEntries: Map<string, string> = new Map(
+	((wpMediaMap as { entries?: [string, string][] }).entries ?? []).map(([path, key]) => [path.toLowerCase(), key]),
+);
+
+function wpMediaKey(url: unknown): string | null {
+	if (typeof url !== "string") return null;
+	const m = WP_UPLOADS_RE.exec(url.split(/[?#]/)[0]);
+	if (!m) return null;
+	let path = decodeURIComponent(m[1]).toLowerCase();
+	const direct = wpEntries.get(path);
+	if (direct) return direct;
+	path = path.replace(/-\d+x\d+(\.[a-z0-9]+)$/, "$1").replace(/-scaled(\.[a-z0-9]+)$/, "$1");
+	return wpEntries.get(path) ?? null;
+}
 
 interface ImageNode {
 	_type?: string;
@@ -57,7 +81,7 @@ function collect(value: unknown, out: ImageNode[]): void {
 export async function hydrateBodyImageDims<T>(content: T): Promise<T> {
 	// Astro 6 + @astrojs/cloudflare: bindings come from cloudflare:workers, not Astro.locals.runtime
 	const db = (env as unknown as { DB?: D1Like }).DB;
-	if (!db || !content) return content;
+	if (!content) return content;
 
 	const nodes: ImageNode[] = [];
 	collect(content, nodes);
@@ -67,13 +91,19 @@ export async function hydrateBodyImageDims<T>(content: T): Promise<T> {
 		if (typeof node.width === "number" && typeof node.height === "number") continue;
 		const asset = node.asset;
 		if (!asset || (asset.provider && asset.provider !== "local")) continue;
-		const key = keyFromPath(asset.url) ?? keyFromPath(asset._ref);
-		if (!key) continue;
+		let key = keyFromPath(asset.url) ?? keyFromPath(asset._ref);
+		if (!key) {
+			// Legacy WordPress reference: rewrite to the migrated original so it renders at all.
+			key = wpMediaKey(asset.url) ?? wpMediaKey(asset._ref);
+			if (!key) continue;
+			asset.url = MEDIA_PREFIX + key;
+			asset._ref = MEDIA_PREFIX + key;
+		}
 		const list = pending.get(key) ?? [];
 		list.push(node);
 		pending.set(key, list);
 	}
-	if (pending.size === 0) return content;
+	if (pending.size === 0 || !db) return content;
 
 	const keys = [...pending.keys()];
 	const dims = new Map<string, { width: number; height: number }>();
