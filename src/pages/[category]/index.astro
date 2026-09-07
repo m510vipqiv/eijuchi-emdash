@@ -96,8 +96,10 @@ const breadcrumbJsonLd = {
 	],
 };
 
-// Body images: fill in width/height from the media table so the browser reserves space (CLS)
-const bodyContent = await hydrateBodyImageDims(page.data.content);
+// Static pages only: fill in body image width/height from the media table (CLS).
+// `page` is null on category archives — PR #14 called this unconditionally and
+// took every /{category}/ down with "Cannot read properties of null (reading 'data')".
+const bodyContent = page ? await hydrateBodyImageDims(page.data.content) : null;
 ---
 
 {
