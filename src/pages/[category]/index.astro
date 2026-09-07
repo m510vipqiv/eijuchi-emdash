@@ -18,6 +18,7 @@ import ContentImage from "../../components/ContentImage.astro";
 import ContentEmbed from "../../components/ContentEmbed.astro";
 import ContentHtml from "../../components/ContentHtml.astro";
 import { fallbackDescription } from "../../utils/description";
+import { hydrateBodyImageDims } from "../../utils/body-image-dims";
 import { Form as ContactForm } from "@emdash-cms/plugin-forms/ui";
 import "@emdash-cms/plugin-forms/styles";
 import Base from "../../layouts/Base.astro";
@@ -52,13 +53,10 @@ let items: Array<{
 }> = [];
 let nextCursor: string | undefined;
 
-let stage = "term";
-try {
 if (!page) {
 	term = await getTerm("category", slug);
 	if (!term) return new Response(null, { status: 404 });
 
-	stage = "collection";
 	const result = await getEmDashCollection("posts", {
 		status: "published",
 		where: { category: term.slug },
@@ -69,31 +67,15 @@ if (!page) {
 	if (Astro.cache?.enabled) Astro.cache.set(result.cacheHint);
 	nextCursor = result.nextCursor;
 
-	// Defensive: a malformed row must not take the whole archive down.
-	const entries = (result.entries ?? []).filter((p) => p && p.data && typeof p.data.id === "string");
-	if (entries.length !== (result.entries?.length ?? 0)) {
-		console.error(
-			`[category-archive] /${slug}/ dropped ${(result.entries?.length ?? 0) - entries.length} malformed entries`,
-			JSON.stringify((result.entries ?? []).filter((p) => !(p && p.data)).slice(0, 3)),
-		);
-	}
-
-	stage = "tags";
 	const tagsByEntry = await getTermsForEntries(
 		"posts",
-		entries.map((p) => p.data.id),
+		result.entries.map((p) => p.data.id),
 		"tag",
 	);
-	stage = "items";
-	items = entries.map((post) => ({
+	items = result.entries.map((post) => ({
 		post,
 		tags: (tagsByEntry.get(post.data.id) ?? []).map((t) => ({ slug: t.slug, label: t.label })),
 	}));
-}
-} catch (err) {
-	// Surface which step blew up in Workers Logs before the 500 propagates.
-	console.error(`[category-archive] /${slug}/ failed at stage=${stage}:`, err instanceof Error ? err.stack : err);
-	throw err;
 }
 
 const label = term ? term.label : categoryLabel(slug);
@@ -113,6 +95,11 @@ const breadcrumbJsonLd = {
 		},
 	],
 };
+
+// Static pages only: fill in body image width/height from the media table (CLS).
+// `page` is null on category archives — PR #14 called this unconditionally and
+// took every /{category}/ down with "Cannot read properties of null (reading 'data')".
+const bodyContent = page ? await hydrateBodyImageDims(page.data.content) : null;
 ---
 
 {
@@ -135,7 +122,7 @@ const breadcrumbJsonLd = {
 				</header>
 				<div class="page-content">
 					<PortableText
-						value={page.data.content}
+						value={bodyContent}
 						components={{ type: { image: ContentImage, embed: ContentEmbed, htmlBlock: ContentHtml } }}
 					/>
 				</div>
