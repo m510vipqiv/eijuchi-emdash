@@ -18,7 +18,6 @@ import ContentImage from "../../components/ContentImage.astro";
 import ContentEmbed from "../../components/ContentEmbed.astro";
 import ContentHtml from "../../components/ContentHtml.astro";
 import { fallbackDescription } from "../../utils/description";
-import { hydrateBodyImageDims } from "../../utils/body-image-dims";
 import { Form as ContactForm } from "@emdash-cms/plugin-forms/ui";
 import "@emdash-cms/plugin-forms/styles";
 import Base from "../../layouts/Base.astro";
@@ -53,10 +52,13 @@ let items: Array<{
 }> = [];
 let nextCursor: string | undefined;
 
+let stage = "term";
+try {
 if (!page) {
 	term = await getTerm("category", slug);
 	if (!term) return new Response(null, { status: 404 });
 
+	stage = "collection";
 	const result = await getEmDashCollection("posts", {
 		status: "published",
 		where: { category: term.slug },
@@ -67,15 +69,31 @@ if (!page) {
 	if (Astro.cache?.enabled) Astro.cache.set(result.cacheHint);
 	nextCursor = result.nextCursor;
 
+	// Defensive: a malformed row must not take the whole archive down.
+	const entries = (result.entries ?? []).filter((p) => p && p.data && typeof p.data.id === "string");
+	if (entries.length !== (result.entries?.length ?? 0)) {
+		console.error(
+			`[category-archive] /${slug}/ dropped ${(result.entries?.length ?? 0) - entries.length} malformed entries`,
+			JSON.stringify((result.entries ?? []).filter((p) => !(p && p.data)).slice(0, 3)),
+		);
+	}
+
+	stage = "tags";
 	const tagsByEntry = await getTermsForEntries(
 		"posts",
-		result.entries.map((p) => p.data.id),
+		entries.map((p) => p.data.id),
 		"tag",
 	);
-	items = result.entries.map((post) => ({
+	stage = "items";
+	items = entries.map((post) => ({
 		post,
 		tags: (tagsByEntry.get(post.data.id) ?? []).map((t) => ({ slug: t.slug, label: t.label })),
 	}));
+}
+} catch (err) {
+	// Surface which step blew up in Workers Logs before the 500 propagates.
+	console.error(`[category-archive] /${slug}/ failed at stage=${stage}:`, err instanceof Error ? err.stack : err);
+	throw err;
 }
 
 const label = term ? term.label : categoryLabel(slug);
@@ -95,9 +113,6 @@ const breadcrumbJsonLd = {
 		},
 	],
 };
-
-// Body images: fill in width/height from the media table so the browser reserves space (CLS)
-const bodyContent = await hydrateBodyImageDims(page.data.content);
 ---
 
 {
@@ -120,7 +135,7 @@ const bodyContent = await hydrateBodyImageDims(page.data.content);
 				</header>
 				<div class="page-content">
 					<PortableText
-						value={bodyContent}
+						value={page.data.content}
 						components={{ type: { image: ContentImage, embed: ContentEmbed, htmlBlock: ContentHtml } }}
 					/>
 				</div>
