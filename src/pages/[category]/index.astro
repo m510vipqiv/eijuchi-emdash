@@ -18,6 +18,7 @@ import ContentImage from "../../components/ContentImage.astro";
 import ContentEmbed from "../../components/ContentEmbed.astro";
 import ContentHtml from "../../components/ContentHtml.astro";
 import { fallbackDescription } from "../../utils/description";
+import { hydrateBodyImageDims } from "../../utils/body-image-dims";
 import { Form as ContactForm } from "@emdash-cms/plugin-forms/ui";
 import "@emdash-cms/plugin-forms/styles";
 import Base from "../../layouts/Base.astro";
@@ -94,6 +95,9 @@ const breadcrumbJsonLd = {
 		},
 	],
 };
+
+// Body images: fill in width/height from the media table so the browser reserves space (CLS)
+const bodyContent = await hydrateBodyImageDims(page.data.content);
 ---
 
 {
@@ -116,7 +120,7 @@ const breadcrumbJsonLd = {
 				</header>
 				<div class="page-content">
 					<PortableText
-						value={page.data.content}
+						value={bodyContent}
 						components={{ type: { image: ContentImage, embed: ContentEmbed, htmlBlock: ContentHtml } }}
 					/>
 				</div>
